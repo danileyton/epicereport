@@ -1,9 +1,35 @@
 <?php
+/**
+ * Exportación de datos de curso a Excel (XLSX)
+ *
+ * @package    local_epicereports
+ * @copyright  2024 Your Name <your@email.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 require_once('../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
-// PhpSpreadsheet (basado en tu getdetallecourselistexcelv2.php).
-require_once($CFG->libdir . '/phpspreadsheet/phpspreadsheet/src/PhpSpreadsheet/Spreadsheet.php');
+// PhpSpreadsheet - Cargar con detección automática de ruta.
+$phpspreadsheet_paths = [
+    $CFG->libdir . '/phpspreadsheet/vendor/autoload.php',
+    $CFG->libdir . '/phpspreadsheet/autoload.php',
+    $CFG->libdir . '/phpspreadsheet/phpspreadsheet/src/PhpSpreadsheet/Spreadsheet.php',
+];
+
+$phpspreadsheet_loaded = false;
+foreach ($phpspreadsheet_paths as $path) {
+    if (file_exists($path)) {
+        require_once($path);
+        $phpspreadsheet_loaded = true;
+        break;
+    }
+}
+
+if (!$phpspreadsheet_loaded) {
+    throw new \moodle_exception('error', 'local_epicereports', '', null, 
+        'PhpSpreadsheet not found. Please check your Moodle installation.');
+}
 
 use local_epicereports\helper;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -12,23 +38,15 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Font;
-
-$enroled = 0;
-$notStart = 0;
-$notStartPercent = 0;
-$started = 0;
-$startedPercent = 0;
-$inProcess = 0;
-$inProcessPercent = 0;
-$completed = 0;
-$completedPercent = 0;
-$certificated = 0;
-$certificatedPercent = 0;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 // --- INICIALIZACIÓN BÁSICA ---
 require_login();
 $context = context_system::instance();
 $PAGE->set_context($context);
+
+// Verificar capacidad.
+require_capability('local/epicereports:view', $context);
 
 // Parámetros.
 $courseid = required_param('courseid', PARAM_INT);
@@ -36,7 +54,7 @@ $preview  = optional_param('preview', 0, PARAM_BOOL);
 
 // Validar que venga un courseid válido (> 0).
 if ($courseid <= 0) {
-    print_error('invalidcourseid', 'error');
+    throw new moodle_exception('invalidcourseid', 'error');
 }
 
 // Obtenemos los datos estructurados para Excel desde el helper.
@@ -48,46 +66,47 @@ $users   = $excel_data['users']   ?? [];
 
 // Si no existe el curso, error estándar de Moodle.
 if (!$course) {
-    print_error('invalidcourseid', 'error');
+    throw new moodle_exception('invalidcourseid', 'error');
 }
 
+// =========================================================================
+// CÁLCULO DE RESUMEN GENERAL
+// =========================================================================
 
+$summary = calculate_course_summary($users);
 
+// Extraer valores para uso posterior.
+$enroled             = $summary['enroled'];
+$notStart            = $summary['not_started'];
+$started             = $summary['started'];
+$inProcess           = $summary['in_process'];
+$completed           = $summary['completed'];
+$certificated        = $summary['certificated'];
+$notStartPercentStr  = $summary['not_started_percent_str'];
+$startedPercentStr   = $summary['started_percent_str'];
+$inProcessPercentStr = $summary['in_process_percent_str'];
+$completedPercentStr = $summary['completed_percent_str'];
+$certificatedPercentStr = $summary['certificated_percent_str'];
 
 /**
- * Convierte un índice 0-based de columna en letra(s) de Excel (A, B, ..., Z, AA, AB, ...).
+ * Calcula el resumen estadístico de usuarios del curso.
  *
- * @param int $index Índice 0-based.
- * @return string Letra(s) de columna.
+ * @param array $users Lista de usuarios con sus datos.
+ * @return array Resumen con conteos y porcentajes.
  */
-function local_epicereports_excel_col($index): string {
-    $index++; // Convertimos a 1-based.
-    $letters = '';
-    while ($index > 0) {
-        $mod = ($index - 1) % 26;
-        $letters = chr(65 + $mod) . $letters;
-        $index = (int)(($index - $mod) / 26);
-    }
-    return $letters;
-}
+function calculate_course_summary(array $users): array {
+    $enroled      = count($users);
+    $notStart     = 0;
+    $started      = 0;
+    $inProcess    = 0;
+    $completed    = 0;
+    $certificated = 0;
 
-
-// --- Cálculo de resumen general (matriculados, estados y certificados).
-// Estos valores se usan tanto en la vista previa como en el Excel.
-$enroled      = count($users);
-$notStart     = 0;
-$started      = 0;
-$inProcess    = 0;
-$completed    = 0;
-$certificated = 0;
-
-if (!empty($users)) {
     foreach ($users as $u) {
         $hasstarted     = !empty($u->primer_acceso);
         $iscompleted    = !empty($u->estado_finalizacion) && $u->estado_finalizacion === 'Completado';
         $hascertificate = !empty($u->certificado) && $u->certificado !== '-';
 
-        // Matriculados ya están contados en $enroled.
         if ($hasstarted) {
             $started++;
         } else {
@@ -109,438 +128,138 @@ if (!empty($users)) {
             $certificated++;
         }
     }
+
+    // Porcentajes.
+    $notStartPercent     = $enroled > 0 ? ($notStart / $enroled) * 100 : 0;
+    $startedPercent      = $enroled > 0 ? ($started / $enroled) * 100 : 0;
+    $inProcessPercent    = $started > 0 ? ($inProcess / $started) * 100 : 0;
+    $completedPercent    = $started > 0 ? ($completed / $started) * 100 : 0;
+    $certificatedPercent = $started > 0 ? ($certificated / $started) * 100 : 0;
+
+    return [
+        'enroled'                 => $enroled,
+        'not_started'             => $notStart,
+        'started'                 => $started,
+        'in_process'              => $inProcess,
+        'completed'               => $completed,
+        'certificated'            => $certificated,
+        'not_started_percent'     => $notStartPercent,
+        'started_percent'         => $startedPercent,
+        'in_process_percent'      => $inProcessPercent,
+        'completed_percent'       => $completedPercent,
+        'certificated_percent'    => $certificatedPercent,
+        'not_started_percent_str' => format_percent($notStartPercent),
+        'started_percent_str'     => format_percent($startedPercent),
+        'in_process_percent_str'  => format_percent($inProcessPercent),
+        'completed_percent_str'   => format_percent($completedPercent),
+        'certificated_percent_str'=> format_percent($certificatedPercent),
+    ];
 }
 
-// Porcentajes:
-// - Sin iniciar / Iniciados respecto del total de matriculados.
-// - En proceso / Completado / Certificados respecto del total de iniciados.
-$notStartPercent     = $enroled > 0 ? ($notStart / $enroled) * 100 : 0;
-$startedPercent      = $enroled > 0 ? ($started  / $enroled) * 100 : 0;
-$inProcessPercent    = $started > 0 ? ($inProcess    / $started) * 100 : 0;
-$completedPercent    = $started > 0 ? ($completed    / $started) * 100 : 0;
-$certificatedPercent = $started > 0 ? ($certificated / $started) * 100 : 0;
+/**
+ * Formatea un porcentaje para mostrar.
+ *
+ * @param float $value Valor del porcentaje.
+ * @return string Porcentaje formateado.
+ */
+function format_percent(float $value): string {
+    return $value > 0 ? number_format($value, 2) . '%' : '0%';
+}
 
-// Versiones formateadas con dos decimales y símbolo % para mostrar en el Excel.
-$notStartPercentStr     = $notStartPercent > 0 ? number_format($notStartPercent, 2) . '%' : '0%';
-$startedPercentStr      = $startedPercent > 0 ? number_format($startedPercent, 2) . '%' : '0%';
-$inProcessPercentStr    = $inProcessPercent > 0 ? number_format($inProcessPercent, 2) . '%' : '0%';
-$completedPercentStr    = $completedPercent > 0 ? number_format($completedPercent, 2) . '%' : '0%';
-$certificatedPercentStr = $certificatedPercent > 0 ? number_format($certificatedPercent, 2) . '%' : '0%';
+/**
+ * Convierte un índice 0-based de columna en letra(s) de Excel.
+ *
+ * @param int $index Índice 0-based.
+ * @return string Letra(s) de columna.
+ */
+function get_excel_column(int $index): string {
+    return Coordinate::stringFromColumnIndex($index + 1);
+}
 
-
-// ---------------------------------------------------------------------------
-//  MODO PREVISUALIZACIÓN (preview=1) → tabla HTML
-// ---------------------------------------------------------------------------
-if ($preview) {
-    $PAGE->set_url(new moodle_url('/local/epicereports/export_course_excel.php', [
-        'courseid' => $courseid,
-        'preview'  => 1
-    ]));
-    $PAGE->set_title(get_string('pluginname', 'local_epicereports'));
-    $PAGE->set_heading(format_string($course->fullname));
-    $PAGE->set_pagelayout('admin');
-
-    echo $OUTPUT->header();
-    echo $OUTPUT->heading('Previsualización de datos para exportar');
-
-    if (empty($users)) {
-        echo $OUTPUT->notification('No hay usuarios matriculados en este curso.', 'info');
-        echo $OUTPUT->footer();
-        exit;
-    }
-
-    echo html_writer::tag('p',
-        'A continuación se muestra una vista previa de los datos que se exportarán. ' .
-        'Si todo se ve correcto, puedes descargar el archivo Excel desde el botón de abajo.'
-    );
-
-    // Botón para descargar directamente el Excel (XLSX).
-    $downloadurl = new moodle_url('/local/epicereports/export_course_excel.php', [
-        'courseid' => $courseid
-    ]);
-    echo html_writer::div(
-        html_writer::link($downloadurl, 'Descargar Excel', ['class' => 'btn btn-primary mb-3']),
-        'mb-3'
-    );
-
-    // Construimos la tabla de previsualización.
-    $table = new html_table();
-    $table->attributes['class'] = 'table table-striped table-bordered table-sm';
-
+/**
+ * Construye las cabeceras de la tabla según los módulos del curso.
+ *
+ * @param array $modules Lista de módulos.
+ * @return array Cabeceras para la tabla.
+ */
+function build_table_headers(array $modules): array {
     // Cabeceras básicas de usuario.
     $headers = [
-        'ID usuario',
-        'Usuario',
-        'ID interno / RUT',
-        'Nombre completo',
-        'Email',
-        'Primer acceso',
-        'Último acceso',
-        'Grupos'
+        get_string('userid', 'local_epicereports'),
+        get_string('username', 'local_epicereports'),
+        get_string('idnumber', 'local_epicereports'),
+        get_string('fullname', 'local_epicereports'),
+        get_string('email', 'local_epicereports'),
+        get_string('firstaccess', 'local_epicereports'),
+        get_string('lastaccess', 'local_epicereports'),
+        get_string('groups', 'local_epicereports'),
     ];
 
-    // Columnas por actividad:
-    // - SCORM: (estado), (intentos), (puntuación)
-    // - Quiz:  (estado), (intentos), (nota más alta)
-    // - Tarea: (estado), (entrega), (fecha entrega), (nota)
-    // - Otros: (estado)
+    // Columnas por actividad.
     foreach ($modules as $module) {
         $modname = $module['modname'] ?? '';
+        $name = format_string($module['name']);
 
-        if ($modname === 'scorm') {
-            $headers[] = format_string($module['name']) . ' (estado)';
-            $headers[] = format_string($module['name']) . ' (intentos)';
-            $headers[] = format_string($module['name']) . ' (puntuación)';
-        } else if ($modname === 'quiz') {
-            $headers[] = format_string($module['name']) . ' (estado)';
-            $headers[] = format_string($module['name']) . ' (intentos)';
-            $headers[] = format_string($module['name']) . ' (nota más alta)';
-        } else if ($modname === 'assign') {
-            $headers[] = format_string($module['name']) . ' (estado)';
-            $headers[] = format_string($module['name']) . ' (entrega)';
-            $headers[] = format_string($module['name']) . ' (fecha entrega)';
-            $headers[] = format_string($module['name']) . ' (nota)';
-        } else {
-            $headers[] = format_string($module['name']) . ' (estado)';
+        switch ($modname) {
+            case 'scorm':
+                $headers[] = $name . ' (' . get_string('status', 'local_epicereports') . ')';
+                $headers[] = $name . ' (' . get_string('attempts', 'local_epicereports') . ')';
+                $headers[] = $name . ' (' . get_string('score', 'local_epicereports') . ')';
+                break;
+
+            case 'quiz':
+                $headers[] = $name . ' (' . get_string('status', 'local_epicereports') . ')';
+                $headers[] = $name . ' (' . get_string('attempts', 'local_epicereports') . ')';
+                $headers[] = $name . ' (' . get_string('highestgrade', 'local_epicereports') . ')';
+                break;
+
+            case 'assign':
+                $headers[] = $name . ' (' . get_string('status', 'local_epicereports') . ')';
+                $headers[] = $name . ' (' . get_string('submission', 'local_epicereports') . ')';
+                $headers[] = $name . ' (' . get_string('submissiondate', 'local_epicereports') . ')';
+                $headers[] = $name . ' (' . get_string('grade', 'local_epicereports') . ')';
+                break;
+
+            default:
+                $headers[] = $name . ' (' . get_string('status', 'local_epicereports') . ')';
+                break;
         }
     }
 
     // Resumen final del usuario.
-    $headers = array_merge($headers, [
-        'Certificado',
-        'Avance',
-        'Nota final (%)',
-        'Fecha finalización',
-        'Estado finalización'
-    ]);
+    $headers[] = get_string('certificate', 'local_epicereports');
+    $headers[] = get_string('progress', 'local_epicereports');
+    $headers[] = get_string('finalgrade', 'local_epicereports');
+    $headers[] = get_string('completiondate', 'local_epicereports');
+    $headers[] = get_string('completionstatus', 'local_epicereports');
 
-    $table->head = $headers;
-    $table->data = [];
-    
-    $usersCount = 0;
-
-    foreach ($users as $user) {
-        $usersCount++;
-        $row = [];
-
-        // Datos base de usuario.
-        $row[] = $user->userid        ?? '';
-        $row[] = $user->username      ?? '';
-        $row[] = $user->idnumber      ?? '';
-        $row[] = $user->fullname      ?? '';
-        $row[] = $user->email         ?? '';
-        $row[] = $user->primer_acceso ?? '';
-        $row[] = $user->ultimo_acceso ?? '';
-        $row[] = $user->grupos        ?? '';
-        
-        
-
-        // Datos por módulo: usamos mod_{cmid}.
-        foreach ($modules as $module) {
-            $modname   = $module['modname'] ?? '';
-            $key       = 'mod_' . $module['id'];
-
-            $estado       = '';
-            $intentos     = '';
-            $puntuacion   = '';
-            $notaquiz     = '';
-            $entrega      = '';
-            $fechaentrega = '';
-            $notaassign   = '';
-
-            if (isset($user->$key)) {
-                $detail = $user->$key;
-
-                if (is_object($detail)) {
-                    $estado = $detail->estado ?? '';
-
-                    if ($modname === 'scorm') {
-                        if (isset($detail->intentos)) {
-                            $intentos = $detail->intentos;
-                        }
-                        if (isset($detail->puntuacion)) {
-                            $puntuacion = $detail->puntuacion;
-                        }
-                    } else if ($modname === 'quiz') {
-                        if (isset($detail->intentos)) {
-                            $intentos = $detail->intentos;
-                        }
-                        if (isset($detail->nota)) {
-                            $notaquiz = $detail->nota;
-                        }
-                    } else if ($modname === 'assign') {
-                        if (isset($detail->entrega)) {
-                            $entrega = $detail->entrega;
-                        }
-                        if (isset($detail->fechaentrega)) {
-                            $fechaentrega = $detail->fechaentrega;
-                        }
-                        if (isset($detail->nota)) {
-                            $notaassign = $detail->nota;
-                        }
-                    }
-                } else {
-                    $estado = (string)$detail;
-                }
-            }
-
-            if ($modname === 'scorm') {
-                $intentosdisplay   = ($intentos === '' || $intentos === null || (string)$intentos === '0') ? '-' : $intentos;
-                $puntuaciondisplay = ($puntuacion === '' || $puntuacion === null) ? '-' : $puntuacion;
-
-                $row[] = $estado;
-                $row[] = $intentosdisplay;
-                $row[] = $puntuaciondisplay;
-
-            } else if ($modname === 'quiz') {
-                $intentosdisplay = ($intentos === '' || $intentos === null || (string)$intentos === '0') ? '-' : $intentos;
-                $notadisplay     = ($notaquiz === '' || $notaquiz === null) ? '-' : $notaquiz;
-
-                $row[] = $estado;
-                $row[] = $intentosdisplay;
-                $row[] = $notadisplay;
-
-            } else if ($modname === 'assign') {
-                $fechaentdisplay = ($fechaentrega === '' || $fechaentrega === null) ? '-' : $fechaentrega;
-                $notaassigndisp  = ($notaassign === '' || $notaassign === null) ? '-' : $notaassign;
-
-                $row[] = $estado;
-                $row[] = $entrega;
-                $row[] = $fechaentdisplay;
-                $row[] = $notaassigndisp;
-
-            } else {
-                $row[] = $estado;
-            }
-        }
-
-        // Resumen final.
-        $row[] = $user->certificado         ?? '';
-        $row[] = $user->porcentaje_avance   ?? '';
-        $row[] = $user->nota_final          ?? '';
-        $row[] = $user->fecha_finalizacion  ?? '';
-        $row[] = $user->estado_finalizacion ?? '';
-        
-        if($user->fecha_finalizacion){$completed++;}
-        if($user->primer_acceso){$started++;}else{$notStart++;}
-
-        $table->data[] = $row;
-    }
-
-    echo html_writer::table($table);
-    echo $OUTPUT->footer();
-    exit;
+    return $headers;
 }
 
-// ---------------------------------------------------------------------------
-//  MODO EXPORTACIÓN (XLSX real con PhpSpreadsheet)
-// ---------------------------------------------------------------------------
+/**
+ * Construye una fila de datos para un usuario.
+ *
+ * @param object $user Datos del usuario.
+ * @param array $modules Lista de módulos.
+ * @return array Fila de datos.
+ */
+function build_user_row(object $user, array $modules): array {
+    $row = [];
 
-if (empty($users)) {
-    // Opcional: en vez de generar un XLSX vacío, mostramos mensaje.
-    $PAGE->set_url(new moodle_url('/local/epicereports/export_course_excel.php', [
-        'courseid' => $courseid
-    ]));
-    $PAGE->set_title(get_string('pluginname', 'local_epicereports'));
-    $PAGE->set_heading(format_string($course->fullname));
-    $PAGE->set_pagelayout('admin');
-
-    echo $OUTPUT->header();
-    echo $OUTPUT->notification('No hay usuarios matriculados en este curso.', 'info');
-    echo $OUTPUT->footer();
-    exit;
-}
-
-// Creamos el Excel.
-$spreadsheet = new Spreadsheet();
-$sheet       = $spreadsheet->getActiveSheet();
-
-// Título de hoja (máx 31 caracteres).
-$sheet->setTitle(substr(format_string($course->shortname), 0, 31));
-
-// -----------------------------
-// Fila 1: información general
-// -----------------------------
-
-// Encabezados de la tabla de resumen (fila 1).
-$sheet->setCellValue('A1', 'Criterio');
-$sheet->setCellValue('B1', 'N°');
-$sheet->setCellValue('C1', 'Porcentaje');
-
-// Encabezados en negrita y centrados.
-$headerStyle = [
-    'font' => [
-        'bold' => true,
-        'color' => ['rgb' => 'FFFFFF'],
-        'size' => 12,
-    ],
-    'fill' => [
-        'fillType' => Fill::FILL_SOLID,
-        'startColor' => ['rgb' => '2E75B6']
-    ],
-    'alignment' => [
-        'horizontal' => Alignment::HORIZONTAL_CENTER,
-        'vertical' => Alignment::VERTICAL_CENTER,
-    ],
-    'borders' => [
-        'allBorders' => [
-            'borderStyle' => Border::BORDER_THIN,
-            'color' => ['rgb' => '000000'],
-        ],
-    ],
-];
-
-// Estilo general de datos.
-$dataStyle = [
-    'font' => [
-        'bold' => true,
-    ],
-    'borders' => [
-        'allBorders' => [
-            'borderStyle' => Border::BORDER_THIN,
-            'color' => ['rgb' => '000000'],
-        ],
-    ],
-    'alignment' => [
-        'vertical' => Alignment::VERTICAL_CENTER,
-    ],
-];
-
-$dataItems = [
-     
-    'borders' => [
-        'allBorders' => [
-            'borderStyle' => Border::BORDER_THIN,
-            'color' => ['rgb' => '000000'],
-        ],
-    ],
-    'alignment' => [
-        'vertical' => Alignment::VERTICAL_CENTER,
-    ],
-];
-
-// Encabezados.
-$sheet->getStyle('A1:C1')->applyFromArray($headerStyle);
-
-// Etiquetas de criterios (columna A).
-$sheet->setCellValue('A2', 'Matriculados');
-$sheet->setCellValue('A3', 'Sin iniciar');
-$sheet->setCellValue('A4', 'Iniciados');
-$sheet->setCellValue('A5', 'En proceso');
-$sheet->setCellValue('A6', 'Completado');
-$sheet->setCellValue('A7', 'Certificados');
-
-// Valores absolutos (columna B).
-$sheet->setCellValue('B2', $enroled);
-$sheet->setCellValue('B3', $notStart);
-$sheet->setCellValue('B4', $started);
-$sheet->setCellValue('B5', $inProcess);
-$sheet->setCellValue('B6', $completed);
-$sheet->setCellValue('B7', $certificated);
-
-// Porcentajes (columna C).
-// Matriculados no lleva porcentaje (es el 100 % base).
-$sheet->setCellValue('C2', '');
-$sheet->setCellValue('C3', $notStartPercentStr);
-$sheet->setCellValue('C4', $startedPercentStr);
-$sheet->setCellValue('C5', $inProcessPercentStr);
-$sheet->setCellValue('C6', $completedPercentStr);
-$sheet->setCellValue('C7', $certificatedPercentStr);
-
-// Aplicar estilos a filas de datos.
-$sheet->getStyle('A2:A7')->applyFromArray($dataStyle);
-$sheet->getStyle('B2:B7')->applyFromArray($dataItems);
-$sheet->getStyle('C2:C7')->applyFromArray($dataItems);
-
-// -----------------------------
-// A partir de la fila 9 sigues con tus encabezados dinámicos
-// (ID usuario, username, módulos, etc.)
-// -----------------------------
-
-
-// Fila en blanco (fila 8).
-// Fila 7: cabeceras.
-$rownum = 9;
-$col    = 0;
-
-// Cabeceras básicas.
-$baseheaders = [
-    'ID usuario',
-    'Usuario',
-    'ID interno / RUT',
-    'Nombre completo',
-    'Email',
-    'Primer acceso',
-    'Último acceso',
-    'Grupos'
-];
-
-foreach ($baseheaders as $h) {
-    $sheet->setCellValue(local_epicereports_excel_col($col) . $rownum, $h);
-    $col++;
-}
-
-// Cabeceras por módulo (igual que en la previsualización).
-foreach ($modules as $module) {
-    $modname = $module['modname'] ?? '';
-    $name    = format_string($module['name']);
-
-    if ($modname === 'scorm') {
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (estado)');
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (intentos)');
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (puntuación)');
-    } else if ($modname === 'quiz') {
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (estado)');
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (intentos)');
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (nota más alta)');
-    } else if ($modname === 'assign') {
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (estado)');
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (entrega)');
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (fecha entrega)');
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (nota)');
-    } else {
-        $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $name . ' (estado)');
-    }
-}
-
-// Cabeceras resumen final.
-$sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, 'Certificado');
-$sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, 'Avance');
-$sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, 'Nota final (%)');
-$sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, 'Fecha finalización');
-$sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, 'Estado finalización');
-
-// Un poco de estilo de cabecera (fondo gris claro y negrita).
-$lastcolletter = local_epicereports_excel_col($col - 1);
-$sheet->getStyle('A' . $rownum . ':' . $lastcolletter . $rownum)->getFont()->setBold(true);
-$sheet->getStyle('A' . $rownum . ':' . $lastcolletter . $rownum)
-    ->getFill()
-    ->setFillType(Fill::FILL_SOLID)
-    ->getStartColor()
-    ->setARGB('FFEFEFEF');
-
-// -----------------------------
-// Filas de datos
-// -----------------------------
-$rownum++;
-
-foreach ($users as $user) {
-    $col = 0;
-
-    // Datos base usuario.
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->userid        ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->username      ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->idnumber      ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->fullname      ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->email         ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->primer_acceso ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->ultimo_acceso ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->grupos        ?? '');
+    // Datos base de usuario.
+    $row[] = $user->userid ?? '';
+    $row[] = $user->username ?? '';
+    $row[] = $user->idnumber ?? '';
+    $row[] = $user->fullname ?? '';
+    $row[] = $user->email ?? '';
+    $row[] = $user->primer_acceso ?? '';
+    $row[] = $user->ultimo_acceso ?? '';
+    $row[] = $user->grupos ?? '';
 
     // Datos por módulo.
     foreach ($modules as $module) {
-        $modname   = $module['modname'] ?? '';
-        $key       = 'mod_' . $module['id'];
+        $modname = $module['modname'] ?? '';
+        $key = 'mod_' . $module['id'];
 
         $estado       = '';
         $intentos     = '';
@@ -556,89 +275,481 @@ foreach ($users as $user) {
             if (is_object($detail)) {
                 $estado = $detail->estado ?? '';
 
-                if ($modname === 'scorm') {
-                    if (isset($detail->intentos)) {
-                        $intentos = $detail->intentos;
-                    }
-                    if (isset($detail->puntuacion)) {
-                        $puntuacion = $detail->puntuacion;
-                    }
-                } else if ($modname === 'quiz') {
-                    if (isset($detail->intentos)) {
-                        $intentos = $detail->intentos;
-                    }
-                    if (isset($detail->nota)) {
-                        $notaquiz = $detail->nota;
-                    }
-                } else if ($modname === 'assign') {
-                    if (isset($detail->entrega)) {
-                        $entrega = $detail->entrega;
-                    }
-                    if (isset($detail->fechaentrega)) {
-                        $fechaentrega = $detail->fechaentrega;
-                    }
-                    if (isset($detail->nota)) {
-                        $notaassign = $detail->nota;
-                    }
+                switch ($modname) {
+                    case 'scorm':
+                        $intentos = $detail->intentos ?? '';
+                        $puntuacion = $detail->puntuacion ?? '';
+                        break;
+
+                    case 'quiz':
+                        $intentos = $detail->intentos ?? '';
+                        $notaquiz = $detail->nota ?? '';
+                        break;
+
+                    case 'assign':
+                        $entrega = $detail->entrega ?? '';
+                        $fechaentrega = $detail->fechaentrega ?? '';
+                        $notaassign = $detail->nota ?? '';
+                        break;
                 }
             } else {
                 $estado = (string)$detail;
             }
         }
 
-        if ($modname === 'scorm') {
-            $intentosdisplay   = ($intentos === '' || $intentos === null || (string)$intentos === '0') ? '-' : $intentos;
-            $puntuaciondisplay = ($puntuacion === '' || $puntuacion === null) ? '-' : $puntuacion;
+        // Agregar datos según tipo de módulo.
+        switch ($modname) {
+            case 'scorm':
+                $row[] = $estado;
+                $row[] = format_empty_value($intentos);
+                $row[] = format_empty_value($puntuacion);
+                break;
 
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $estado);
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $intentosdisplay);
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $puntuaciondisplay);
+            case 'quiz':
+                $row[] = $estado;
+                $row[] = format_empty_value($intentos);
+                $row[] = format_empty_value($notaquiz);
+                break;
 
-        } else if ($modname === 'quiz') {
-            $intentosdisplay = ($intentos === '' || $intentos === null || (string)$intentos === '0') ? '-' : $intentos;
-            $notadisplay     = ($notaquiz === '' || $notaquiz === null) ? '-' : $notaquiz;
+            case 'assign':
+                $row[] = $estado;
+                $row[] = $entrega;
+                $row[] = format_empty_value($fechaentrega);
+                $row[] = format_empty_value($notaassign);
+                break;
 
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $estado);
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $intentosdisplay);
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $notadisplay);
-
-        } else if ($modname === 'assign') {
-            $fechaentdisplay = ($fechaentrega === '' || $fechaentrega === null) ? '-' : $fechaentrega;
-            $notaassigndisp  = ($notaassign === '' || $notaassign === null) ? '-' : $notaassign;
-
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $estado);
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $entrega);
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $fechaentdisplay);
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $notaassigndisp);
-
-        } else {
-            $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $estado);
+            default:
+                $row[] = $estado;
+                break;
         }
     }
 
     // Resumen final.
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->certificado         ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->porcentaje_avance   ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->nota_final          ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->fecha_finalizacion  ?? '');
-    $sheet->setCellValue(local_epicereports_excel_col($col++) . $rownum, $user->estado_finalizacion ?? '');
+    $row[] = $user->certificado ?? '';
+    $row[] = $user->porcentaje_avance ?? '';
+    $row[] = $user->nota_final ?? '';
+    $row[] = $user->fecha_finalizacion ?? '';
+    $row[] = $user->estado_finalizacion ?? '';
+
+    return $row;
+}
+
+/**
+ * Formatea valores vacíos o nulos como '-'.
+ *
+ * @param mixed $value Valor a formatear.
+ * @return string Valor formateado.
+ */
+function format_empty_value($value): string {
+    if ($value === '' || $value === null || $value === 0 || $value === '0') {
+        return '-';
+    }
+    return (string)$value;
+}
+
+// =========================================================================
+// MODO PREVISUALIZACIÓN (preview=1)
+// =========================================================================
+
+if ($preview) {
+    $PAGE->set_url(new moodle_url('/local/epicereports/export_course_excel.php', [
+        'courseid' => $courseid,
+        'preview'  => 1
+    ]));
+    $PAGE->set_title(get_string('pluginname', 'local_epicereports'));
+    $PAGE->set_heading(format_string($course->fullname));
+    $PAGE->set_pagelayout('admin');
+
+    echo $OUTPUT->header();
+    echo $OUTPUT->heading(get_string('preview', 'local_epicereports'));
+
+    if (empty($users)) {
+        echo $OUTPUT->notification(get_string('nousers', 'local_epicereports'), 'info');
+        echo $OUTPUT->footer();
+        exit;
+    }
+
+    // Información del curso.
+    echo html_writer::start_div('alert alert-info');
+    echo html_writer::tag('strong', get_string('course', 'local_epicereports') . ': ');
+    echo format_string($course->fullname);
+    echo ' (' . get_string('enrolled', 'local_epicereports') . ': ' . $enroled . ')';
+    echo html_writer::end_div();
+
+    // Resumen estadístico.
+    echo html_writer::start_div('card mb-4');
+    echo html_writer::start_div('card-header');
+    echo html_writer::tag('h5', get_string('summary', 'local_epicereports'), ['class' => 'mb-0']);
+    echo html_writer::end_div();
+    echo html_writer::start_div('card-body');
+
+    $summary_table = new html_table();
+    $summary_table->attributes['class'] = 'table table-sm table-bordered';
+    $summary_table->head = [
+        get_string('criteria', 'local_epicereports'),
+        get_string('count', 'local_epicereports'),
+        get_string('percentage', 'local_epicereports')
+    ];
+    $summary_table->data = [
+        [get_string('enrolled', 'local_epicereports'), $enroled, '-'],
+        [get_string('notstarted', 'local_epicereports'), $notStart, $notStartPercentStr],
+        [get_string('started', 'local_epicereports'), $started, $startedPercentStr],
+        [get_string('inprogress', 'local_epicereports'), $inProcess, $inProcessPercentStr],
+        [get_string('completed', 'local_epicereports'), $completed, $completedPercentStr],
+        [get_string('certificated', 'local_epicereports'), $certificated, $certificatedPercentStr],
+    ];
+    echo html_writer::table($summary_table);
+
+    echo html_writer::end_div();
+    echo html_writer::end_div();
+
+    echo html_writer::tag('p', get_string('previewdescription', 'local_epicereports'));
+
+    // Botón para descargar directamente el Excel.
+    $downloadurl = new moodle_url('/local/epicereports/export_course_excel.php', [
+        'courseid' => $courseid
+    ]);
+    echo html_writer::div(
+        html_writer::link($downloadurl, get_string('downloadexcel', 'local_epicereports'), [
+            'class' => 'btn btn-primary mb-3'
+        ]),
+        'mb-3'
+    );
+
+    // Construimos la tabla de previsualización.
+    $table = new html_table();
+    $table->attributes['class'] = 'table table-striped table-bordered table-sm';
+    $table->head = build_table_headers($modules);
+    $table->data = [];
+
+    foreach ($users as $user) {
+        $table->data[] = build_user_row($user, $modules);
+    }
+
+    // Contenedor con scroll horizontal.
+    echo html_writer::start_div('table-responsive');
+    echo html_writer::table($table);
+    echo html_writer::end_div();
+
+    echo $OUTPUT->footer();
+    exit;
+}
+
+// =========================================================================
+// MODO EXPORTACIÓN (XLSX)
+// =========================================================================
+
+if (empty($users)) {
+    $PAGE->set_url(new moodle_url('/local/epicereports/export_course_excel.php', [
+        'courseid' => $courseid
+    ]));
+    $PAGE->set_title(get_string('pluginname', 'local_epicereports'));
+    $PAGE->set_heading(format_string($course->fullname));
+    $PAGE->set_pagelayout('admin');
+
+    echo $OUTPUT->header();
+    echo $OUTPUT->notification(get_string('nousers', 'local_epicereports'), 'info');
+    echo $OUTPUT->footer();
+    exit;
+}
+
+// Creamos el Excel.
+$spreadsheet = new Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
+
+// Título de hoja (máx 31 caracteres, sin caracteres especiales).
+$sheetTitle = preg_replace('/[\\\\\\/*?:\\[\\]]/', '', $course->shortname);
+$sheet->setTitle(mb_substr($sheetTitle, 0, 31));
+
+// Metadatos del documento.
+$spreadsheet->getProperties()
+    ->setCreator('EpicE Reports')
+    ->setLastModifiedBy('EpicE Reports')
+    ->setTitle(get_string('coursereport', 'local_epicereports') . ' - ' . $course->fullname)
+    ->setSubject(get_string('coursereport', 'local_epicereports'))
+    ->setDescription(get_string('generatedby', 'local_epicereports') . ' ' . date('Y-m-d H:i:s'));
+
+// =========================================================================
+// ESTILOS
+// =========================================================================
+
+$headerStyle = [
+    'font' => [
+        'bold' => true,
+        'color' => ['rgb' => 'FFFFFF'],
+        'size' => 11,
+    ],
+    'fill' => [
+        'fillType' => Fill::FILL_SOLID,
+        'startColor' => ['rgb' => '2E75B6']
+    ],
+    'alignment' => [
+        'horizontal' => Alignment::HORIZONTAL_CENTER,
+        'vertical' => Alignment::VERTICAL_CENTER,
+        'wrapText' => true,
+    ],
+    'borders' => [
+        'allBorders' => [
+            'borderStyle' => Border::BORDER_THIN,
+            'color' => ['rgb' => '000000'],
+        ],
+    ],
+];
+
+$summaryHeaderStyle = [
+    'font' => [
+        'bold' => true,
+        'color' => ['rgb' => 'FFFFFF'],
+        'size' => 11,
+    ],
+    'fill' => [
+        'fillType' => Fill::FILL_SOLID,
+        'startColor' => ['rgb' => '4472C4']
+    ],
+    'alignment' => [
+        'horizontal' => Alignment::HORIZONTAL_CENTER,
+        'vertical' => Alignment::VERTICAL_CENTER,
+    ],
+    'borders' => [
+        'allBorders' => [
+            'borderStyle' => Border::BORDER_THIN,
+            'color' => ['rgb' => '000000'],
+        ],
+    ],
+];
+
+$summaryLabelStyle = [
+    'font' => [
+        'bold' => true,
+    ],
+    'borders' => [
+        'allBorders' => [
+            'borderStyle' => Border::BORDER_THIN,
+            'color' => ['rgb' => '000000'],
+        ],
+    ],
+    'alignment' => [
+        'vertical' => Alignment::VERTICAL_CENTER,
+    ],
+];
+
+$summaryDataStyle = [
+    'borders' => [
+        'allBorders' => [
+            'borderStyle' => Border::BORDER_THIN,
+            'color' => ['rgb' => '000000'],
+        ],
+    ],
+    'alignment' => [
+        'horizontal' => Alignment::HORIZONTAL_CENTER,
+        'vertical' => Alignment::VERTICAL_CENTER,
+    ],
+];
+
+$dataHeaderStyle = [
+    'font' => [
+        'bold' => true,
+    ],
+    'fill' => [
+        'fillType' => Fill::FILL_SOLID,
+        'startColor' => ['rgb' => 'D9E2F3']
+    ],
+    'alignment' => [
+        'horizontal' => Alignment::HORIZONTAL_CENTER,
+        'vertical' => Alignment::VERTICAL_CENTER,
+        'wrapText' => true,
+    ],
+    'borders' => [
+        'allBorders' => [
+            'borderStyle' => Border::BORDER_THIN,
+            'color' => ['rgb' => '000000'],
+        ],
+    ],
+];
+
+$dataCellStyle = [
+    'borders' => [
+        'allBorders' => [
+            'borderStyle' => Border::BORDER_THIN,
+            'color' => ['rgb' => 'CCCCCC'],
+        ],
+    ],
+    'alignment' => [
+        'vertical' => Alignment::VERTICAL_CENTER,
+    ],
+];
+
+// =========================================================================
+// SECCIÓN 1: INFORMACIÓN DEL CURSO (Filas 1-2)
+// =========================================================================
+
+$sheet->setCellValue('A1', get_string('course', 'local_epicereports'));
+$sheet->setCellValue('B1', format_string($course->fullname));
+$sheet->setCellValue('C1', get_string('courseid', 'local_epicereports'));
+$sheet->setCellValue('D1', $courseid);
+$sheet->setCellValue('E1', get_string('exportdate', 'local_epicereports'));
+$sheet->setCellValue('F1', date('Y-m-d H:i:s'));
+
+$sheet->getStyle('A1')->getFont()->setBold(true);
+$sheet->getStyle('C1')->getFont()->setBold(true);
+$sheet->getStyle('E1')->getFont()->setBold(true);
+
+// =========================================================================
+// SECCIÓN 2: RESUMEN ESTADÍSTICO (Filas 4-10)
+// =========================================================================
+
+// Título de la sección.
+$sheet->setCellValue('A3', get_string('summary', 'local_epicereports'));
+$sheet->getStyle('A3')->getFont()->setBold(true)->setSize(12);
+
+// Encabezados de la tabla de resumen.
+$sheet->setCellValue('A4', get_string('criteria', 'local_epicereports'));
+$sheet->setCellValue('B4', get_string('count', 'local_epicereports'));
+$sheet->setCellValue('C4', get_string('percentage', 'local_epicereports'));
+$sheet->getStyle('A4:C4')->applyFromArray($summaryHeaderStyle);
+
+// Datos del resumen.
+$summaryData = [
+    [get_string('enrolled', 'local_epicereports'), $enroled, '-'],
+    [get_string('notstarted', 'local_epicereports'), $notStart, $notStartPercentStr],
+    [get_string('started', 'local_epicereports'), $started, $startedPercentStr],
+    [get_string('inprogress', 'local_epicereports'), $inProcess, $inProcessPercentStr],
+    [get_string('completed', 'local_epicereports'), $completed, $completedPercentStr],
+    [get_string('certificated', 'local_epicereports'), $certificated, $certificatedPercentStr],
+];
+
+$summaryRow = 5;
+foreach ($summaryData as $data) {
+    $sheet->setCellValue('A' . $summaryRow, $data[0]);
+    $sheet->setCellValue('B' . $summaryRow, $data[1]);
+    $sheet->setCellValue('C' . $summaryRow, $data[2]);
+
+    $sheet->getStyle('A' . $summaryRow)->applyFromArray($summaryLabelStyle);
+    $sheet->getStyle('B' . $summaryRow . ':C' . $summaryRow)->applyFromArray($summaryDataStyle);
+
+    $summaryRow++;
+}
+
+// Ajustar anchos de columnas del resumen.
+$sheet->getColumnDimension('A')->setWidth(20);
+$sheet->getColumnDimension('B')->setWidth(12);
+$sheet->getColumnDimension('C')->setWidth(15);
+
+// =========================================================================
+// SECCIÓN 3: DATOS DE USUARIOS (A partir de fila 12)
+// =========================================================================
+
+$dataStartRow = 12;
+
+// Título de la sección.
+$sheet->setCellValue('A' . ($dataStartRow - 1), get_string('userdata', 'local_epicereports'));
+$sheet->getStyle('A' . ($dataStartRow - 1))->getFont()->setBold(true)->setSize(12);
+
+// Cabeceras de la tabla.
+$headers = build_table_headers($modules);
+$col = 0;
+
+foreach ($headers as $header) {
+    $colLetter = get_excel_column($col);
+    $sheet->setCellValue($colLetter . $dataStartRow, $header);
+    $col++;
+}
+
+// Aplicar estilo a las cabeceras.
+$lastColLetter = get_excel_column($col - 1);
+$sheet->getStyle('A' . $dataStartRow . ':' . $lastColLetter . $dataStartRow)
+    ->applyFromArray($dataHeaderStyle);
+
+// Altura de fila para cabeceras.
+$sheet->getRowDimension($dataStartRow)->setRowHeight(30);
+
+// =========================================================================
+// FILAS DE DATOS DE USUARIOS
+// =========================================================================
+
+$rownum = $dataStartRow + 1;
+
+foreach ($users as $user) {
+    $rowData = build_user_row($user, $modules);
+    $col = 0;
+
+    foreach ($rowData as $value) {
+        $colLetter = get_excel_column($col);
+        $sheet->setCellValue($colLetter . $rownum, $value);
+        $col++;
+    }
+
+    // Aplicar estilo a la fila (bordes ligeros).
+    $sheet->getStyle('A' . $rownum . ':' . $lastColLetter . $rownum)
+        ->applyFromArray($dataCellStyle);
+
+    // Alternar colores de fondo para mejor legibilidad.
+    if ($rownum % 2 === 0) {
+        $sheet->getStyle('A' . $rownum . ':' . $lastColLetter . $rownum)
+            ->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()
+            ->setARGB('FFF5F5F5');
+    }
 
     $rownum++;
 }
 
-// Autoajustar ancho de columnas.
+// =========================================================================
+// AJUSTES FINALES
+// =========================================================================
+
+// Autoajustar ancho de columnas (desde columna D en adelante para evitar
+// que las primeras columnas queden demasiado anchas).
 for ($i = 0; $i < $col; $i++) {
-    $sheet->getColumnDimension(local_epicereports_excel_col($i))->setAutoSize(true);
+    $colLetter = get_excel_column($i);
+
+    if ($i < 3) {
+        // Primeras columnas: ancho fijo.
+        $widths = [10, 15, 15]; // ID, Username, IDNumber.
+        $sheet->getColumnDimension($colLetter)->setWidth($widths[$i] ?? 15);
+    } else if ($i === 3) {
+        // Nombre completo: más ancho.
+        $sheet->getColumnDimension($colLetter)->setWidth(30);
+    } else if ($i === 4) {
+        // Email.
+        $sheet->getColumnDimension($colLetter)->setWidth(35);
+    } else {
+        // Resto: autosize con límite.
+        $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+    }
 }
 
-// Nombre de archivo.
-$filename = 'reporte_curso_' . $courseid . '_' . date('Ymd_His') . '.xlsx';
+// Congelar paneles (fijar cabeceras).
+$sheet->freezePane('A' . ($dataStartRow + 1));
 
-// Cabeceras de descarga.
+// Filtros automáticos.
+$sheet->setAutoFilter('A' . $dataStartRow . ':' . $lastColLetter . ($rownum - 1));
+
+// =========================================================================
+// GENERAR Y DESCARGAR ARCHIVO
+// =========================================================================
+
+// Nombre de archivo seguro.
+$filename = clean_filename('reporte_curso_' . $courseid . '_' . date('Ymd_His') . '.xlsx');
+
+// Cabeceras HTTP para descarga.
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Cache-Control: max-age=0');
+header('Pragma: public');
 
+// Limpiar cualquier salida previa.
+if (ob_get_length()) {
+    ob_end_clean();
+}
+
+// Escribir y enviar.
 $writer = new Xlsx($spreadsheet);
 $writer->save('php://output');
+
+// Liberar memoria.
+$spreadsheet->disconnectWorksheets();
+unset($spreadsheet);
+
 exit;
