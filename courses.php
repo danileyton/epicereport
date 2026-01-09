@@ -20,17 +20,12 @@ require_login();
 $context = context_system::instance();
 require_capability('local/epicereports:view', $context);
 
-// Configurar página.
+// Configurar página - IMPORTANTE: usar 'popup' como en el original.
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/epicereports/courses.php'));
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout('popup');
 $PAGE->set_title(get_string('courselist', 'local_epicereports'));
 $PAGE->set_heading(get_string('courselist', 'local_epicereports'));
-
-// Breadcrumb.
-$PAGE->navbar->add(get_string('pluginname', 'local_epicereports'), 
-    new moodle_url('/local/epicereports/dashboard.php'));
-$PAGE->navbar->add(get_string('courses', 'local_epicereports'));
 
 // =========================================================================
 // FILTROS
@@ -38,66 +33,56 @@ $PAGE->navbar->add(get_string('courses', 'local_epicereports'));
 $category_filter = optional_param('category', 0, PARAM_INT);
 $visible_filter = optional_param('visible', -1, PARAM_INT);
 
-// Obtener lista de categorías para el menú desplegable.
+// Obtener lista de categorías.
 $categories = helper::get_course_categories();
 
 // Obtener cursos filtrados.
 $courses_list = helper::get_courses_list('', $category_filter, $visible_filter);
 
 // =========================================================================
-// DATATABLES (carga local compatible con RequireJS)
+// DATATABLES - MÉTODO ORIGINAL QUE FUNCIONABA
 // =========================================================================
+
+// jQuery - IMPORTANTE: esto debe ir ANTES del js_init_code.
 $PAGE->requires->jquery();
-$PAGE->requires->css('/local/epicereports/css/jquery.dataTables.min.css');
 
-$dtjspath = (new moodle_url('/local/epicereports/js/jquery.dataTables.min.js'))->out(false);
-$langurl = (new moodle_url('/local/epicereports/js/dataTables.spanish.json'))->out(false);
+// CSS de DataTables desde CDN.
+$PAGE->requires->css(new moodle_url('https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css'));
 
+// DataTables via RequireJS.
 $PAGE->requires->js_init_code("
-    require(['jquery'], function($) {
-        var oldDefine = window.define;
-        var oldDefineAmd = oldDefine && oldDefine.amd;
-
-        if (oldDefine && oldDefine.amd) {
-            oldDefine.amd = undefined;
-        }
-
-        var script = document.createElement('script');
-        script.src = '{$dtjspath}';
-        script.onload = function() {
-            if (oldDefine) {
-                window.define = oldDefine;
-                if (oldDefineAmd) {
-                    oldDefine.amd = oldDefineAmd;
-                }
+    require.config({
+        paths: {
+            'datatables.net': 'https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min'
+        },
+        shim: {
+            'datatables.net': {
+                deps: ['jquery'],
+                exports: 'jQuery.fn.dataTable'
             }
+        }
+    });
 
-            $('#courses-table').DataTable({
-                pageLength: 25,
-                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, '" . get_string('all', 'local_epicereports') . "']],
-                order: [[1, 'asc']],
-                language: {
-                    url: '{$langurl}'
-                },
-                columnDefs: [
-                    { orderable: false, targets: -1 }
-                ],
-                dom: '<\"row\"<\"col-sm-12 col-md-6\"l><\"col-sm-12 col-md-6\"f>>' +
-                     '<\"row\"<\"col-sm-12\"tr>>' +
-                     '<\"row\"<\"col-sm-12 col-md-5\"i><\"col-sm-12 col-md-7\"p>>',
-                responsive: true
-            });
-        };
-        script.onerror = function() {
-            console.error('Error loading DataTables');
-        };
-        document.head.appendChild(script);
+    require(['jquery', 'datatables.net'], function($) {
+        $('#courses-table').DataTable({
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Todos']],
+            order: [[1, 'asc']],
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
+            },
+            columnDefs: [
+                { orderable: false, targets: -1 }
+            ]
+        });
     });
 ");
 
 // =========================================================================
 // RENDERIZADO
 // =========================================================================
+
+$PAGE->requires->css(new moodle_url('/local/epicereports/styles_epicereports.css'));
 echo $OUTPUT->header();
 
 // Layout con menú lateral + contenido.
@@ -106,7 +91,8 @@ echo html_writer::start_div('row');
 // =========================================================================
 // COLUMNA IZQUIERDA: Menú lateral
 // =========================================================================
-echo html_writer::start_div('col-md-3 col-lg-2 mb-4');
+echo html_writer::start_div('col-md-3 col-lg-2 mb-4 epicereports-sidebar');
+
 local_epicereports_render_sidebar('courses');
 echo html_writer::end_div();
 
@@ -218,7 +204,7 @@ if (empty($courses_list)) {
         'p-3'
     );
 } else {
-    echo html_writer::start_div('table-responsive');
+    echo html_writer::start_div('table-responsive p-3');
 
     echo html_writer::start_tag('table', [
         'id' => 'courses-table',
@@ -263,7 +249,6 @@ if (empty($courses_list)) {
         if (!empty($course->category) && isset($categories[$course->category])) {
             $category_name = $categories[$course->category];
         } else if (!empty($course->category)) {
-            // Obtener nombre de categoría si no está en el array.
             global $DB;
             $cat = $DB->get_field('course_categories', 'name', ['id' => $course->category]);
             $category_name = $cat ? format_string($cat) : '-';

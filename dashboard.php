@@ -23,7 +23,7 @@ require_capability('local/epicereports:view', $context);
 // Configurar página.
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/epicereports/dashboard.php'));
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout('popup');
 $PAGE->set_title(get_string('pluginname', 'local_epicereports'));
 $PAGE->set_heading(get_string('pluginname', 'local_epicereports'));
 
@@ -52,6 +52,7 @@ $PAGE->requires->js_call_amd('local_epicereports/dashboard', 'init', [$chart_con
 // =========================================================================
 // RENDERIZADO
 // =========================================================================
+$PAGE->requires->css(new moodle_url('/local/epicereports/styles_epicereports.css'));
 echo $OUTPUT->header();
 
 // Layout con menú lateral + contenido.
