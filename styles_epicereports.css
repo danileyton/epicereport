@@ -1,0 +1,34 @@
+/* Sidebar EpicE Reports */
+.epicereports-sidebar .list-group-item,
+.epicereports-sidebar .list-group-item-action {
+  background-color: #0d6efd; /* azul bootstrap */
+  color: #fff;
+  border-color: rgba(255,255,255,.15);
+}
+
+/* Hover */
+.epicereports-sidebar .list-group-item:hover,
+.epicereports-sidebar .list-group-item-action:hover {
+  background-color: #0b5ed7;
+  color: #fff;
+}
+
+/* Activo */
+.epicereports-sidebar .list-group-item.active,
+.epicereports-sidebar .list-group-item-action.active {
+  background-color: #0a58ca;
+  border-color: rgba(255,255,255,.25);
+  color: #fff;
+}
+
+/* Links e íconos dentro del item */
+.epicereports-sidebar .list-group-item a,
+.epicereports-sidebar a.list-group-item {
+  color: #fff;
+  text-decoration: none;
+}
+
+.epicereports-sidebar .list-group-item i,
+.epicereports-sidebar .list-group-item .fa {
+  color: #fff;
+}

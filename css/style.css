@@ -1,0 +1,620 @@
+/**
+ * EpicE Reports - Sistema de Diseño
+ * 
+ * Paleta de colores inspirada en dashboards profesionales
+ * con énfasis en legibilidad y jerarquía visual clara
+ *
+ * @package    local_epicereports
+ * @copyright  2024
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/* =========================================================================
+   VARIABLES CSS - SISTEMA DE DISEÑO
+   ========================================================================= */
+
+:root {
+    /* Colores Primarios */
+    --epice-primary: #1e3a5f;
+    --epice-primary-light: #2d5a8a;
+    --epice-primary-dark: #0f2744;
+    
+    /* Colores de Acento */
+    --epice-accent: #0ea5e9;
+    --epice-accent-light: #38bdf8;
+    
+    /* Colores de Estado */
+    --epice-success: #10b981;
+    --epice-success-light: #34d399;
+    --epice-success-bg: rgba(16, 185, 129, 0.1);
+    
+    --epice-warning: #f59e0b;
+    --epice-warning-light: #fbbf24;
+    --epice-warning-bg: rgba(245, 158, 11, 0.1);
+    
+    --epice-danger: #ef4444;
+    --epice-danger-light: #f87171;
+    --epice-danger-bg: rgba(239, 68, 68, 0.1);
+    
+    --epice-info: #3b82f6;
+    --epice-info-light: #60a5fa;
+    --epice-info-bg: rgba(59, 130, 246, 0.1);
+    
+    /* Fondos */
+    --epice-bg-page: #f8fafc;
+    --epice-bg-card: #ffffff;
+    --epice-bg-sidebar: linear-gradient(180deg, #1e3a5f 0%, #0f2744 100%);
+    --epice-bg-header: linear-gradient(135deg, #1e3a5f 0%, #2d5a8a 100%);
+    --epice-bg-table-header: #f1f5f9;
+    --epice-bg-table-stripe: #f8fafc;
+    
+    /* Texto */
+    --epice-text-primary: #1e293b;
+    --epice-text-secondary: #64748b;
+    --epice-text-muted: #94a3b8;
+    --epice-text-inverse: #ffffff;
+    
+    /* Bordes */
+    --epice-border: #e2e8f0;
+    --epice-border-light: #f1f5f9;
+    
+    /* Sombras */
+    --epice-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --epice-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    
+    /* Bordes redondeados */
+    --epice-radius: 8px;
+    --epice-radius-md: 12px;
+    --epice-radius-lg: 16px;
+    
+    /* Transiciones */
+    --epice-transition: all 0.2s ease-in-out;
+}
+
+/* =========================================================================
+   SIDEBAR / MENÚ LATERAL
+   ========================================================================= */
+
+.epice-sidebar {
+    background: var(--epice-bg-sidebar);
+    border-radius: var(--epice-radius-lg);
+    padding: 16px;
+    box-shadow: var(--epice-shadow-md);
+}
+
+.epice-sidebar-header {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.epice-sidebar-logo {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+}
+
+.epice-sidebar-title {
+    color: var(--epice-text-inverse);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.epice-sidebar-subtitle {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.7rem;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.epice-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.epice-nav-item {
+    margin-bottom: 4px;
+}
+
+.epice-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none !important;
+    border-radius: var(--epice-radius);
+    transition: var(--epice-transition);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.epice-nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--epice-text-inverse);
+}
+
+.epice-nav-link.active {
+    background-color: var(--epice-accent);
+    color: var(--epice-text-inverse);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+}
+
+.epice-nav-icon {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+/* =========================================================================
+   TARJETAS
+   ========================================================================= */
+
+.epice-card {
+    background: var(--epice-bg-card);
+    border-radius: var(--epice-radius-md);
+    box-shadow: var(--epice-shadow);
+    border: 1px solid var(--epice-border-light);
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+
+.epice-card-header {
+    background: var(--epice-bg-header);
+    padding: 16px 24px;
+}
+
+.epice-card-header-light {
+    background: var(--epice-bg-table-header);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--epice-border);
+}
+
+.epice-card-title {
+    color: var(--epice-text-inverse);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.epice-card-title-dark {
+    color: var(--epice-text-primary);
+}
+
+.epice-card-body {
+    padding: 24px;
+}
+
+/* =========================================================================
+   TARJETAS DE ESTADÍSTICAS
+   ========================================================================= */
+
+.epice-stat-card {
+    background: var(--epice-bg-card);
+    border-radius: var(--epice-radius-md);
+    padding: 24px;
+    box-shadow: var(--epice-shadow);
+    border: 1px solid var(--epice-border-light);
+    transition: var(--epice-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.epice-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.epice-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--epice-shadow-md);
+}
+
+.epice-stat-card.stat-primary::before { background: var(--epice-info); }
+.epice-stat-card.stat-success::before { background: var(--epice-success); }
+.epice-stat-card.stat-warning::before { background: var(--epice-warning); }
+.epice-stat-card.stat-danger::before { background: var(--epice-danger); }
+
+.epice-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--epice-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-bottom: 16px;
+}
+
+.epice-stat-icon.icon-primary { background: var(--epice-info-bg); color: var(--epice-info); }
+.epice-stat-icon.icon-success { background: var(--epice-success-bg); color: var(--epice-success); }
+.epice-stat-icon.icon-warning { background: var(--epice-warning-bg); color: #b45309; }
+.epice-stat-icon.icon-danger { background: var(--epice-danger-bg); color: var(--epice-danger); }
+
+.epice-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--epice-text-primary);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.epice-stat-label {
+    font-size: 0.875rem;
+    color: var(--epice-text-secondary);
+    font-weight: 500;
+}
+
+/* =========================================================================
+   BOTONES
+   ========================================================================= */
+
+.epice-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: var(--epice-radius);
+    border: none;
+    cursor: pointer;
+    transition: var(--epice-transition);
+    text-decoration: none !important;
+}
+
+.epice-btn:hover {
+    transform: translateY(-1px);
+}
+
+.epice-btn-success {
+    background: var(--epice-success);
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-success:hover {
+    background: var(--epice-success-light);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.epice-btn-info {
+    background: var(--epice-info);
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-info:hover {
+    background: var(--epice-info-light);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.epice-btn-warning {
+    background: var(--epice-warning);
+    color: var(--epice-text-primary) !important;
+}
+
+.epice-btn-warning:hover {
+    background: var(--epice-warning-light);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.epice-btn-outline {
+    background: transparent;
+    color: var(--epice-text-secondary) !important;
+    border: 1px solid var(--epice-border);
+}
+
+.epice-btn-outline:hover {
+    background: var(--epice-bg-table-header);
+    color: var(--epice-text-primary) !important;
+}
+
+.epice-btn-primary {
+    background: var(--epice-primary);
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-primary:hover {
+    background: var(--epice-primary-light);
+    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3);
+}
+
+.epice-btn-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+/* =========================================================================
+   BADGES / ETIQUETAS
+   ========================================================================= */
+
+.epice-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+.epice-badge-success { background: var(--epice-success-bg); color: var(--epice-success); }
+.epice-badge-warning { background: var(--epice-warning-bg); color: #b45309; }
+.epice-badge-danger { background: var(--epice-danger-bg); color: var(--epice-danger); }
+.epice-badge-info { background: var(--epice-info-bg); color: var(--epice-info); }
+.epice-badge-secondary { background: rgba(100, 116, 139, 0.1); color: var(--epice-text-secondary); }
+
+/* =========================================================================
+   BARRAS DE PROGRESO
+   ========================================================================= */
+
+.epice-progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 150px;
+}
+
+.epice-progress {
+    flex: 1;
+    height: 8px;
+    background: var(--epice-border-light);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.epice-progress-bar {
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.6s ease;
+}
+
+.epice-progress-success { background: linear-gradient(90deg, var(--epice-success) 0%, var(--epice-success-light) 100%); }
+.epice-progress-warning { background: linear-gradient(90deg, var(--epice-warning) 0%, var(--epice-warning-light) 100%); }
+.epice-progress-danger { background: linear-gradient(90deg, var(--epice-danger) 0%, var(--epice-danger-light) 100%); }
+.epice-progress-info { background: linear-gradient(90deg, var(--epice-info) 0%, var(--epice-info-light) 100%); }
+
+.epice-progress-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--epice-text-secondary);
+    min-width: 40px;
+}
+
+/* =========================================================================
+   INFORMACIÓN DEL CURSO
+   ========================================================================= */
+
+.epice-course-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.epice-info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--epice-bg-table-stripe);
+    border-radius: var(--epice-radius);
+}
+
+.epice-info-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--epice-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--epice-info-bg);
+    color: var(--epice-info);
+    flex-shrink: 0;
+}
+
+.epice-info-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.epice-info-label {
+    font-size: 0.7rem;
+    color: var(--epice-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.epice-info-value {
+    font-size: 0.95rem;
+    color: var(--epice-text-primary);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* =========================================================================
+   FORMULARIOS Y FILTROS
+   ========================================================================= */
+
+.epice-filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+}
+
+.epice-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.epice-form-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--epice-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.epice-form-select {
+    padding: 10px 16px;
+    font-size: 0.875rem;
+    border: 1px solid var(--epice-border);
+    border-radius: var(--epice-radius);
+    background: var(--epice-bg-card);
+    color: var(--epice-text-primary);
+    min-width: 180px;
+}
+
+.epice-form-select:focus {
+    outline: none;
+    border-color: var(--epice-accent);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* =========================================================================
+   CONTADOR DE RESULTADOS
+   ========================================================================= */
+
+.epice-results-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--epice-info-bg);
+    border-radius: var(--epice-radius);
+    font-size: 0.875rem;
+    color: var(--epice-info);
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+/* =========================================================================
+   TABLAS MEJORADAS
+   ========================================================================= */
+
+.epice-table-container {
+    overflow-x: auto;
+    padding: 16px;
+}
+
+table.epice-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+table.epice-table thead th {
+    background: var(--epice-bg-table-header);
+    color: var(--epice-text-primary);
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 2px solid var(--epice-border);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+table.epice-table tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--epice-border-light);
+    color: var(--epice-text-primary);
+    font-size: 0.875rem;
+}
+
+table.epice-table tbody tr:hover {
+    background: rgba(14, 165, 233, 0.04);
+}
+
+table.epice-table tbody tr:nth-child(even) {
+    background: var(--epice-bg-table-stripe);
+}
+
+/* =========================================================================
+   DATATABLES OVERRIDES
+   ========================================================================= */
+
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+    padding: 16px;
+    color: var(--epice-text-secondary);
+    font-size: 0.875rem;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    padding: 8px 12px;
+    border: 1px solid var(--epice-border);
+    border-radius: var(--epice-radius);
+    margin-left: 8px;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    outline: none;
+    border-color: var(--epice-accent);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 6px 12px;
+    margin: 0 2px;
+    border-radius: 4px;
+    border: 1px solid var(--epice-border) !important;
+    background: var(--epice-bg-card) !important;
+    color: var(--epice-text-secondary) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--epice-bg-table-header) !important;
+    color: var(--epice-text-primary) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--epice-primary) !important;
+    color: var(--epice-text-inverse) !important;
+    border-color: var(--epice-primary) !important;
+}
+
+/* =========================================================================
+   RESPONSIVE
+   ========================================================================= */
+
+@media (max-width: 768px) {
+    .epice-sidebar {
+        margin-bottom: 24px;
+    }
+    
+    .epice-stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .epice-filter-form {
+        flex-direction: column;
+    }
+    
+    .epice-form-select {
+        width: 100%;
+    }
+    
+    .epice-btn-group {
+        flex-direction: column;
+    }
+    
+    .epice-btn {
+        width: 100%;
+    }
+}
