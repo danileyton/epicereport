@@ -1,6 +1,6 @@
 <?php
 /**
- * Listado de cursos con filtros - Diseño mejorado
+ * Listado de cursos - Diseño mejorado con CSS embebido
  *
  * @package    local_epicereports
  * @copyright  2024
@@ -30,9 +30,6 @@ $visible_filter = optional_param('visible', -1, PARAM_INT);
 
 $categories = helper::get_course_categories();
 $courses_list = helper::get_courses_list('', $category_filter, $visible_filter);
-
-// CSS personalizado.
-$PAGE->requires->css('/local/epicereports/css/styles.css');
 
 // jQuery y DataTables.
 $PAGE->requires->jquery();
@@ -67,6 +64,111 @@ $PAGE->requires->js_init_code("
 ");
 
 echo $OUTPUT->header();
+
+// CSS embebido.
+echo '<style>
+:root {
+    --epice-primary: #1e3a5f;
+    --epice-primary-light: #2d5a8a;
+    --epice-accent: #0ea5e9;
+    --epice-success: #10b981;
+    --epice-success-bg: rgba(16, 185, 129, 0.1);
+    --epice-warning: #f59e0b;
+    --epice-warning-bg: rgba(245, 158, 11, 0.1);
+    --epice-info: #3b82f6;
+    --epice-info-bg: rgba(59, 130, 246, 0.1);
+    --epice-bg-card: #ffffff;
+    --epice-bg-sidebar: linear-gradient(180deg, #1e3a5f 0%, #0f2744 100%);
+    --epice-bg-header: linear-gradient(135deg, #1e3a5f 0%, #2d5a8a 100%);
+    --epice-bg-table-header: #f1f5f9;
+    --epice-bg-table-stripe: #f8fafc;
+    --epice-text-primary: #1e293b;
+    --epice-text-secondary: #64748b;
+    --epice-text-inverse: #ffffff;
+    --epice-border: #e2e8f0;
+    --epice-border-light: #f1f5f9;
+    --epice-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --epice-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --epice-radius: 8px;
+    --epice-radius-md: 12px;
+    --epice-radius-lg: 16px;
+    --epice-transition: all 0.2s ease-in-out;
+}
+
+.epice-sidebar {
+    background: var(--epice-bg-sidebar);
+    border-radius: var(--epice-radius-lg);
+    padding: 16px;
+    box-shadow: var(--epice-shadow-md);
+}
+
+.epice-sidebar-header {
+    padding: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.epice-sidebar-logo { font-size: 1.5rem; margin-bottom: 4px; }
+.epice-sidebar-title { color: var(--epice-text-inverse); font-size: 1.1rem; font-weight: 700; margin: 0; }
+.epice-sidebar-subtitle { color: rgba(255, 255, 255, 0.6); font-size: 0.7rem; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+.epice-nav { list-style: none; padding: 0; margin: 0; }
+.epice-nav-item { margin-bottom: 4px; }
+.epice-nav-link { display: flex; align-items: center; padding: 10px 16px; color: rgba(255, 255, 255, 0.8) !important; text-decoration: none !important; border-radius: var(--epice-radius); transition: var(--epice-transition); font-size: 0.9rem; font-weight: 500; }
+.epice-nav-link:hover { background-color: rgba(255, 255, 255, 0.1); color: var(--epice-text-inverse) !important; }
+.epice-nav-link.active { background-color: var(--epice-accent); color: var(--epice-text-inverse) !important; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4); }
+.epice-nav-icon { margin-right: 10px; width: 20px; text-align: center; }
+
+.epice-card { background: var(--epice-bg-card); border-radius: var(--epice-radius-md); box-shadow: var(--epice-shadow); border: 1px solid var(--epice-border-light); margin-bottom: 24px; overflow: hidden; }
+.epice-card-header { background: var(--epice-bg-header); padding: 16px 24px; }
+.epice-card-header-light { background: var(--epice-bg-table-header); padding: 16px 24px; border-bottom: 1px solid var(--epice-border); }
+.epice-card-title { color: var(--epice-text-inverse); font-size: 1.1rem; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 8px; }
+.epice-card-title-dark { color: var(--epice-text-primary); }
+.epice-card-body { padding: 24px; }
+
+.epice-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; font-size: 0.875rem; font-weight: 600; border-radius: var(--epice-radius); border: none; cursor: pointer; transition: var(--epice-transition); text-decoration: none !important; }
+.epice-btn:hover { transform: translateY(-1px); }
+.epice-btn-primary { background: var(--epice-primary); color: var(--epice-text-inverse) !important; }
+.epice-btn-primary:hover { background: var(--epice-primary-light); box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3); }
+.epice-btn-outline { background: transparent; color: var(--epice-text-secondary) !important; border: 1px solid var(--epice-border); }
+.epice-btn-outline:hover { background: var(--epice-bg-table-header); color: var(--epice-text-primary) !important; }
+.epice-btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.epice-badge { display: inline-flex; align-items: center; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 4px; }
+.epice-badge-success { background: var(--epice-success-bg); color: var(--epice-success); }
+.epice-badge-secondary { background: rgba(100, 116, 139, 0.1); color: var(--epice-text-secondary); }
+
+.epice-filter-form { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+.epice-form-group { display: flex; flex-direction: column; gap: 4px; }
+.epice-form-label { font-size: 0.7rem; font-weight: 600; color: var(--epice-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.epice-form-select { padding: 10px 16px; font-size: 0.875rem; border: 1px solid var(--epice-border); border-radius: var(--epice-radius); background: var(--epice-bg-card); color: var(--epice-text-primary); min-width: 180px; }
+.epice-form-select:focus { outline: none; border-color: var(--epice-accent); box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1); }
+
+.epice-results-count { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--epice-info-bg); border-radius: var(--epice-radius); font-size: 0.875rem; color: var(--epice-info); font-weight: 500; margin-bottom: 16px; }
+
+.epice-table-container { overflow-x: auto; padding: 16px; }
+table.epice-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+table.epice-table thead th { background: var(--epice-bg-table-header); color: var(--epice-text-primary); font-weight: 600; font-size: 0.8rem; padding: 14px 16px; text-align: left; border-bottom: 2px solid var(--epice-border); text-transform: uppercase; letter-spacing: 0.03em; }
+table.epice-table tbody td { padding: 14px 16px; border-bottom: 1px solid var(--epice-border-light); color: var(--epice-text-primary); font-size: 0.875rem; }
+table.epice-table tbody tr:hover { background: rgba(14, 165, 233, 0.04); }
+table.epice-table tbody tr:nth-child(even) { background: var(--epice-bg-table-stripe); }
+
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_paginate { padding: 16px; color: var(--epice-text-secondary); font-size: 0.875rem; }
+.dataTables_wrapper .dataTables_filter input { padding: 8px 12px; border: 1px solid var(--epice-border); border-radius: var(--epice-radius); margin-left: 8px; }
+.dataTables_wrapper .dataTables_filter input:focus { outline: none; border-color: var(--epice-accent); box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1); }
+.dataTables_wrapper .dataTables_paginate .paginate_button { padding: 6px 12px; margin: 0 2px; border-radius: 4px; border: 1px solid var(--epice-border) !important; background: var(--epice-bg-card) !important; color: var(--epice-text-secondary) !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: var(--epice-bg-table-header) !important; color: var(--epice-text-primary) !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--epice-primary) !important; color: var(--epice-text-inverse) !important; border-color: var(--epice-primary) !important; }
+
+@media (max-width: 768px) {
+    .epice-sidebar { margin-bottom: 24px; }
+    .epice-filter-form { flex-direction: column; }
+    .epice-form-select { width: 100%; }
+    .epice-btn-group { flex-direction: column; }
+    .epice-btn { width: 100%; }
+}
+</style>';
 
 // Layout principal.
 echo html_writer::start_div('row');

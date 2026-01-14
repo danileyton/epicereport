@@ -105,27 +105,18 @@ class schedule_form extends \moodleform {
         $mform->setDefault('sendtime_minute', $defaultminute);
 
         // =====================================================================
-        // Days of the week
+        // Days of the week - CORREGIDO: cada día como campo independiente
         // =====================================================================
         $mform->addElement('header', 'daysheader', get_string('senddays', 'local_epicereports'));
 
-        $days = [
-            'monday'    => get_string('monday', 'local_epicereports'),
-            'tuesday'   => get_string('tuesday', 'local_epicereports'),
-            'wednesday' => get_string('wednesday', 'local_epicereports'),
-            'thursday'  => get_string('thursday', 'local_epicereports'),
-            'friday'    => get_string('friday', 'local_epicereports'),
-            'saturday'  => get_string('saturday', 'local_epicereports'),
-            'sunday'    => get_string('sunday', 'local_epicereports'),
-        ];
-
-        $daysgroup = [];
-        foreach ($days as $daykey => $daylabel) {
-            $daysgroup[] = $mform->createElement('advcheckbox', $daykey, '', $daylabel);
-        }
-
-        $mform->addGroup($daysgroup, 'daysgroup', get_string('senddays', 'local_epicereports'), '<br>', false);
-        $mform->addHelpButton('daysgroup', 'senddays', 'local_epicereports');
+        // Agregar cada día como checkbox independiente (no en grupo)
+        $mform->addElement('advcheckbox', 'monday', '', get_string('monday', 'local_epicereports'));
+        $mform->addElement('advcheckbox', 'tuesday', '', get_string('tuesday', 'local_epicereports'));
+        $mform->addElement('advcheckbox', 'wednesday', '', get_string('wednesday', 'local_epicereports'));
+        $mform->addElement('advcheckbox', 'thursday', '', get_string('thursday', 'local_epicereports'));
+        $mform->addElement('advcheckbox', 'friday', '', get_string('friday', 'local_epicereports'));
+        $mform->addElement('advcheckbox', 'saturday', '', get_string('saturday', 'local_epicereports'));
+        $mform->addElement('advcheckbox', 'sunday', '', get_string('sunday', 'local_epicereports'));
 
         // =====================================================================
         // Report Content
@@ -163,10 +154,10 @@ class schedule_form extends \moodleform {
         // Placeholders info.
         $mform->addElement('static', 'placeholdersinfo', '',
             '<div class="alert alert-info">' .
-            '<strong>Marcadores disponibles:</strong><br>' .
-            '<code>{coursename}</code> - Nombre del curso<br>' .
-            '<code>{date}</code> - Fecha del reporte<br>' .
-            '<code>{recipientname}</code> - Nombre del destinatario' .
+            '<strong>' . get_string('availableplaceholders', 'local_epicereports') . ':</strong><br>' .
+            '<code>{coursename}</code> - ' . get_string('placeholder:coursename', 'local_epicereports') . '<br>' .
+            '<code>{date}</code> - ' . get_string('placeholder:date', 'local_epicereports') . '<br>' .
+            '<code>{recipientname}</code> - ' . get_string('placeholder:recipientname', 'local_epicereports') .
             '</div>'
         );
 
@@ -178,7 +169,7 @@ class schedule_form extends \moodleform {
         // Instructions.
         $mform->addElement('static', 'recipientsinstructions', '',
             '<div class="alert alert-secondary">' .
-            'Los destinatarios se configuran después de guardar la programación.' .
+            get_string('recipientsinstructions', 'local_epicereports') .
             '</div>'
         );
 
@@ -187,7 +178,7 @@ class schedule_form extends \moodleform {
             $recipientcount = \local_epicereports\schedule_manager::get_recipients($schedule->id);
             $count = count($recipientcount);
             $mform->addElement('static', 'currentrecipients', get_string('recipients', 'local_epicereports'),
-                '<span class="badge badge-info">' . $count . ' destinatario(s) configurado(s)</span>');
+                '<span class="badge badge-info">' . $count . ' ' . get_string('recipientsconfigured', 'local_epicereports') . '</span>');
         }
 
         // =====================================================================
@@ -216,7 +207,7 @@ class schedule_form extends \moodleform {
             }
         }
         if (!$daysselected) {
-            $errors['daysgroup'] = get_string('error:nodaysselected', 'local_epicereports');
+            $errors['monday'] = get_string('error:nodaysselected', 'local_epicereports');
         }
 
         // Validate end date is after start date.

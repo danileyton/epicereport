@@ -56,11 +56,15 @@ class schedule_manager {
     /**
      * Get all enabled schedules that are due to run.
      *
-     * @param int $timestamp Current timestamp to check against.
+     * @param int|null $timestamp Current timestamp to check against (defaults to now).
      * @return array Array of schedule objects ready to run.
      */
-    public static function get_pending_schedules(int $timestamp): array {
+    public static function get_pending_schedules(?int $timestamp = null): array {
         global $DB;
+
+        if ($timestamp === null) {
+            $timestamp = time();
+        }
 
         $sql = "SELECT s.*
                   FROM {" . self::TABLE_SCHEDULES . "} s

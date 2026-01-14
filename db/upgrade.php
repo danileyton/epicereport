@@ -21,7 +21,8 @@ function xmldb_local_epicereports_upgrade($oldversion) {
     $dbman = $DB->get_manager();
 
     // Upgrade para añadir las tablas de programación de reportes.
-    if ($oldversion < 2024060104) {
+    // También verifica si las tablas existen aunque la versión sea superior (por si hubo error en instalación anterior).
+    if ($oldversion < 2024060104 || !$dbman->table_exists('local_epicereports_schedules')) {
 
         // =====================================================================
         // Tabla: local_epicereports_schedules
@@ -136,8 +137,27 @@ function xmldb_local_epicereports_upgrade($oldversion) {
             $dbman->create_table($table);
         }
 
-        // Actualizar savepoint.
-        upgrade_plugin_savepoint(true, 2024060104, 'local', 'epicereports');
+        // Actualizar savepoint solo si estamos realmente en una versión anterior.
+        if ($oldversion < 2024060104) {
+            upgrade_plugin_savepoint(true, 2024060104, 'local', 'epicereports');
+        }
+    }
+
+    // Asegurar que las tablas existen para versiones posteriores también.
+    if ($oldversion < 2024060106) {
+        // Verificar y crear tablas si faltan (por si hubo error previo).
+        $tables_to_check = ['local_epicereports_schedules', 'local_epicereports_recipients', 'local_epicereports_logs'];
+        
+        foreach ($tables_to_check as $tablename) {
+            if (!$dbman->table_exists($tablename)) {
+                // Forzar recreación ejecutando el bloque anterior.
+                // Esto es un fallback de seguridad.
+                throw new moodle_exception('missingtables', 'local_epicereports', '', null,
+                    "La tabla $tablename no existe. Por favor, desinstale y reinstale el plugin.");
+            }
+        }
+        
+        upgrade_plugin_savepoint(true, 2024060106, 'local', 'epicereports');
     }
 
     return true;
