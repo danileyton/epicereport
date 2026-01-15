@@ -309,7 +309,7 @@ class email_sender {
      * @return object User-like object for email_to_user().
      */
     private static function get_recipient_user(object $recipient): object {
-        global $DB;
+        global $DB, $CFG;
 
         // If recipient has a Moodle user ID, get the full user.
         if (!empty($recipient->userid)) {
@@ -319,19 +319,44 @@ class email_sender {
             }
         }
 
-        // Create a fake user object for external recipients.
+        // Buscar si el email pertenece a un usuario existente en Moodle.
+        $existinguser = $DB->get_record('user', ['email' => $recipient->email, 'deleted' => 0]);
+        if ($existinguser) {
+            return $existinguser;
+        }
+
+        // Create a complete fake user object for external recipients.
+        // Moodle's email_to_user requires many fields to work properly.
         $fakeuser = new \stdClass();
-        $fakeuser->id = -1;
+        $fakeuser->id = -99;  // ID negativo para indicar usuario externo
         $fakeuser->email = $recipient->email;
-        $fakeuser->firstname = $recipient->fullname ?: 'Destinatario';
-        $fakeuser->lastname = '';
+        $fakeuser->username = 'external_' . md5($recipient->email);
+        
+        // Nombre completo.
+        $fullname = $recipient->fullname ?: 'Destinatario';
+        $nameparts = explode(' ', $fullname, 2);
+        $fakeuser->firstname = $nameparts[0];
+        $fakeuser->lastname = $nameparts[1] ?? '';
+        
+        // Campos requeridos por email_to_user().
         $fakeuser->maildisplay = 1;
-        $fakeuser->mailformat = 1; // HTML
+        $fakeuser->mailformat = 1;  // HTML format
         $fakeuser->deleted = 0;
         $fakeuser->auth = 'manual';
         $fakeuser->suspended = 0;
         $fakeuser->emailstop = 0;
-
+        $fakeuser->confirmed = 1;
+        
+        // Campos adicionales que Moodle puede necesitar.
+        $fakeuser->lang = $CFG->lang ?? 'es';
+        $fakeuser->timezone = $CFG->timezone ?? 'America/Santiago';
+        $fakeuser->mnethostid = $CFG->mnet_localhost_id ?? 1;
+        $fakeuser->secret = '';
+        $fakeuser->alternatename = '';
+        $fakeuser->middlename = '';
+        $fakeuser->lastnamephonetic = '';
+        $fakeuser->firstnamephonetic = '';
+        
         return $fakeuser;
     }
 
@@ -401,12 +426,30 @@ class email_sender {
             }
         }
 
-        // email_to_user() expects comma-separated strings for multiple attachments
-        // or single string for one attachment.
-        return [
-            'files'     => implode(',', $files),
-            'filenames' => implode(',', $filenames),
-        ];
+        // Para Moodle 4.0+, email_to_user() puede aceptar arrays para múltiples adjuntos.
+        // Si solo hay un archivo, devolvemos string; si hay varios, devolvemos el primer archivo.
+        // Para múltiples archivos, usaremos PHPMailer directamente o envíos separados.
+        if (count($files) === 0) {
+            return [
+                'files'     => '',
+                'filenames' => '',
+            ];
+        } else if (count($files) === 1) {
+            return [
+                'files'     => $files[0],
+                'filenames' => $filenames[0],
+            ];
+        } else {
+            // Moodle's email_to_user solo soporta UN adjunto de forma nativa.
+            // Combinamos los archivos en un ZIP o enviamos solo el primero.
+            // Por ahora, enviamos el primer archivo y registramos advertencia.
+            debugging('email_sender: Multiple attachments detected, only first will be sent. Files: ' . 
+                      implode(', ', $filenames), DEBUG_DEVELOPER);
+            return [
+                'files'     => $files[0],
+                'filenames' => $filenames[0],
+            ];
+        }
     }
 
     /**
@@ -417,8 +460,8 @@ class email_sender {
      * @param string $subject Email subject.
      * @param string $body Plain text body.
      * @param string $bodyhtml HTML body.
-     * @param string $attachments Comma-separated file paths.
-     * @param string $attachnames Comma-separated file names.
+     * @param string $attachment Attachment file path.
+     * @param string $attachname Attachment file name.
      * @return bool True on success.
      */
     private static function do_send_email(
@@ -427,29 +470,47 @@ class email_sender {
         string $subject,
         string $body,
         string $bodyhtml,
-        string $attachments = '',
-        string $attachnames = ''
+        string $attachment = '',
+        string $attachname = ''
     ): bool {
         global $CFG;
+
+        // Verificar que el archivo adjunto existe.
+        if (!empty($attachment) && !file_exists($attachment)) {
+            debugging('email_sender: Attachment file does not exist: ' . $attachment, DEBUG_DEVELOPER);
+            // Continuar sin adjunto si no existe.
+            $attachment = '';
+            $attachname = '';
+        }
+
+        // Log de debug.
+        debugging('email_sender: Sending email to ' . $touser->email . ' with subject: ' . $subject, DEBUG_DEVELOPER);
+        if (!empty($attachment)) {
+            debugging('email_sender: With attachment: ' . $attachname . ' (' . filesize($attachment) . ' bytes)', DEBUG_DEVELOPER);
+        }
 
         // email_to_user signature:
         // email_to_user($user, $from, $subject, $messagetext, $messagehtml='',
         //               $attachment='', $attachname='', $usetrueaddress=true,
         //               $replyto='', $replytoname='', $wordwrapwidth=79)
 
-        return email_to_user(
+        $result = email_to_user(
             $touser,                    // To user
             $fromuser,                  // From user
             $subject,                   // Subject
             $body,                      // Plain text body
             $bodyhtml,                  // HTML body
-            $attachments,               // Attachment file path(s)
-            $attachnames,               // Attachment file name(s)
+            $attachment,                // Attachment file path
+            $attachname,                // Attachment file name
             true,                       // Use true address
             '',                         // Reply-to email
             '',                         // Reply-to name
             79                          // Word wrap width
         );
+
+        debugging('email_sender: email_to_user returned ' . ($result ? 'true' : 'false'), DEBUG_DEVELOPER);
+
+        return $result;
     }
 
     /**

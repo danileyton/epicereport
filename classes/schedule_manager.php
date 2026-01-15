@@ -488,8 +488,9 @@ class schedule_manager {
         $record->id = $logid;
         $record->status = $status;
 
-        if ($status === 'sent') {
+        if ($status === 'sent' || $status === 'success') {
             $record->timesent = time();
+            $record->status = 'success'; // Normalizar a 'success'
         }
 
         if ($status === 'failed' || $status === 'retry') {

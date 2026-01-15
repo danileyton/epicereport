@@ -1,12 +1,4 @@
 <?php
-/**
- * English strings for local_epicereports
- *
- * @package    local_epicereports
- * @copyright  2024 EpicE
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 defined('MOODLE_INTERNAL') || die();
 
 // General.
@@ -15,83 +7,120 @@ $string['pluginname_help'] = 'Advanced reporting system for Moodle';
 
 // Dashboard.
 $string['dashboard'] = 'Dashboard';
-$string['dashboardwelcome'] = 'Welcome to the reports center. Here you will find general platform statistics.';
+$string['dashboardwelcome'] = 'Welcome to the reports panel';
+$string['active_users'] = 'Active Users';
+$string['visible_courses'] = 'Visible Courses';
+$string['hidden_courses'] = 'Hidden Courses';
+$string['total_enrolments'] = 'Total Enrolments';
+$string['satisfaction_percent'] = 'Satisfaction Percentage';
 $string['quickaccess'] = 'Quick access';
 
-// Statistics.
-$string['active_users'] = 'Active users';
-$string['visible_courses'] = 'Visible courses';
-$string['hidden_courses'] = 'Hidden courses';
-$string['satisfaction'] = 'Satisfaction';
-$string['students'] = 'Students';
-
-// Navigation.
+// Courses list.
 $string['courses'] = 'Courses';
-$string['courselist'] = 'Course list';
-$string['coursedetail'] = 'Course detail';
-$string['backtomoodle'] = 'Back to Moodle';
-$string['viewcourses'] = 'View all courses';
-$string['visiblecoursesonly'] = 'Visible courses only';
-$string['hiddencoursesonly'] = 'Hidden courses only';
+$string['courselist'] = 'Course List';
+$string['course'] = 'Course';
+$string['coursedetail'] = 'Course Detail';
+$string['courseid'] = 'Course ID';
+$string['students'] = 'Students';
+$string['currentcourse'] = 'Current course';
+$string['nocourses'] = 'No courses available.';
+$string['viewcourses'] = 'View courses';
 $string['viewdetail'] = 'View detail';
 
-// Filters and forms.
-$string['filter'] = 'Filter';
+// Course filters.
 $string['category'] = 'Category';
 $string['visibility'] = 'Visibility';
-$string['all'] = 'All';
 $string['visible'] = 'Visible';
 $string['hidden'] = 'Hidden';
-$string['yes'] = 'Yes';
-$string['no'] = 'No';
-$string['actions'] = 'Actions';
-$string['status'] = 'Status';
-$string['results'] = 'Results';
+$string['visiblecoursesonly'] = 'Visible courses only';
+$string['hiddencoursesonly'] = 'Hidden courses only';
 
-// Courses.
-$string['course'] = 'Course';
+// Course info.
+$string['fullname'] = 'Full name';
 $string['shortname'] = 'Short name';
-$string['nocourses'] = 'No courses found.';
-$string['enrolledusers'] = 'Enrolled users';
-$string['nousers'] = 'No users enrolled in this course.';
 $string['generalinfo'] = 'General information';
 $string['enrolled'] = 'Enrolled';
-$string['currentcourse'] = 'Current course';
-$string['scheduleforcourse'] = 'Report scheduling for';
+$string['enrolledusers'] = 'Enrolled users';
 
-// User fields.
-$string['fullname'] = 'Full name';
-$string['email'] = 'Email';
+// User data.
+$string['userdata'] = 'User data';
+$string['userid'] = 'User ID';
+$string['username'] = 'Username';
+$string['idnumber'] = 'ID number';
 $string['firstaccess'] = 'First access';
 $string['lastaccess'] = 'Last access';
 $string['groups'] = 'Groups';
+
+// Progress.
 $string['progress'] = 'Progress';
-$string['completionstatus'] = 'Status';
+$string['percentage'] = 'Percentage';
+$string['completionstatus'] = 'Completion status';
+$string['completiondate'] = 'Completion date';
+$string['notstarted'] = 'Not started';
+$string['started'] = 'Started';
+$string['inprogress'] = 'In progress';
+$string['completed'] = 'Completed';
+
+// Grades.
+$string['grade'] = 'Grade';
 $string['finalgrade'] = 'Final grade';
-$string['name'] = 'Name';
+$string['highestgrade'] = 'Highest grade';
+$string['score'] = 'Score';
+$string['attempts'] = 'Attempts';
 
-// Export.
-$string['exporttoexcel'] = 'Export to Excel';
-$string['preview'] = 'Preview';
+// Certificate.
+$string['certificate'] = 'Certificate';
+$string['certificated'] = 'Certificated';
+$string['nocertificates'] = 'No certificates available.';
+$string['noissuedcertificates'] = 'No issued certificates.';
 $string['downloadcertificates'] = 'Download certificates';
-$string['exportfeedback'] = 'Export feedback';
 
-// Scheduled reports.
-$string['scheduledreports'] = 'Scheduled reports';
+// Feedback / Satisfaction.
+$string['satisfaction'] = 'Satisfaction';
+$string['feedbackreport'] = 'Feedback report';
+$string['nofeedback'] = 'No feedback surveys.';
+$string['nofeedbackresponses'] = 'No feedback responses.';
+$string['responsesnumber'] = 'Number of responses';
+
+// Submission (assignments).
+$string['submission'] = 'Submission';
+$string['submissiondate'] = 'Submission date';
+
+// Navigation.
+$string['back'] = 'Back';
+$string['backtomoodle'] = 'Back to Moodle';
+
+// Scheduled Reports.
+$string['scheduledreports'] = 'Scheduled Reports';
 $string['schedules'] = 'Schedules';
-$string['newschedule'] = 'New schedule';
-$string['editschedule'] = 'Edit schedule';
+$string['newschedule'] = 'New Schedule';
+$string['editschedule'] = 'Edit Schedule';
 $string['schedulename'] = 'Name';
+$string['schedulename_help'] = 'Descriptive name to identify this schedule.';
 $string['scheduleenabled'] = 'Enabled';
 $string['schedulestatus'] = 'Schedule status';
-$string['enabled'] = 'Enabled';
-$string['disabled'] = 'Disabled';
-$string['active'] = 'Active';
-$string['inactive'] = 'Inactive';
 $string['noschedules'] = 'No schedules configured.';
+$string['schedulecreated'] = 'Schedule created successfully.';
+$string['scheduleupdated'] = 'Schedule updated successfully.';
+$string['scheduledeleted'] = 'Schedule deleted successfully.';
 
-// Days.
-$string['senddays'] = 'Send days';
+// Dates.
+$string['daterange'] = 'Date Range';
+$string['startdate'] = 'Start Date';
+$string['startdate_help'] = 'Date from which the report will start being sent.';
+$string['enddate'] = 'End Date';
+$string['enddate_help'] = 'Date until which the report will be sent. Leave empty for indefinite sending.';
+$string['noenddate'] = 'No end date';
+$string['exportdate'] = 'Export date';
+
+// Schedule Time.
+$string['sendtime'] = 'Send Time';
+$string['sendtime_help'] = 'Time of day when the report will be sent.';
+$string['senddays'] = 'Send Days';
+$string['senddays_help'] = 'Days of the week when the report will be sent.';
+$string['lastrun'] = 'Last Run';
+
+// Days of the week.
 $string['monday'] = 'Monday';
 $string['tuesday'] = 'Tuesday';
 $string['wednesday'] = 'Wednesday';
@@ -100,142 +129,140 @@ $string['friday'] = 'Friday';
 $string['saturday'] = 'Saturday';
 $string['sunday'] = 'Sunday';
 
-// Times.
-$string['sendtime'] = 'Send time';
-$string['startdate'] = 'Start date';
-$string['enddate'] = 'End date';
-$string['lastrun'] = 'Last run';
-$string['nextrun'] = 'Next run';
-$string['daterange'] = 'Date range';
-$string['noenddate'] = 'No end date';
+// Report Content.
+$string['reportcontent'] = 'Report Content';
+$string['includecourseexcel'] = 'Include course progress report (Excel)';
+$string['includecourseexcel_help'] = 'Include the Excel report with student progress.';
+$string['includefeedbackexcel'] = 'Include feedback report (Excel)';
+$string['includefeedbackexcel_help'] = 'Include the satisfaction survey report.';
+$string['coursereport'] = 'Course report';
 
-// Report content.
-$string['reportcontent'] = 'Report content';
-$string['includecourseexcel'] = 'Include course Excel report';
-$string['includefeedbackexcel'] = 'Include feedback report';
-
-// Email.
-$string['emailsettings'] = 'Email settings';
-$string['emailsubject'] = 'Email subject';
-$string['emailbody'] = 'Email body';
-$string['emailsubjectdefault'] = 'Course report: {coursename}';
+// Email Settings.
+$string['emailsettings'] = 'Email Settings';
+$string['emailsubject'] = 'Email Subject';
+$string['emailsubject_help'] = 'Email subject. You can use placeholders like {coursename}.';
+$string['emailbody'] = 'Email Body';
+$string['emailbody_help'] = 'Email body. You can use placeholders like {coursename}, {date}, {recipientname}.';
+$string['emailsubjectdefault'] = 'Course Report {coursename} - {date}';
 $string['emailbodydefault'] = 'Dear {recipientname},
 
-Please find attached the report for course {coursename}.
-
-Generation date: {date}
+Please find attached the report for course {coursename} for {date}.
 
 Best regards.';
-
-// Recipients.
-$string['recipients'] = 'Recipients';
-$string['recipient'] = 'Recipient';
-$string['addrecipient'] = 'Add recipient';
-$string['recipienttype'] = 'Type';
-$string['norecipients'] = 'No recipients configured.';
-$string['recipientadded'] = 'Recipient added successfully.';
-$string['recipientdeleted'] = 'Recipient deleted successfully.';
-$string['type'] = 'Type';
-$string['optional'] = 'Optional';
-$string['add'] = 'Add';
-$string['back'] = 'Back';
-
-// Logs.
-$string['reportlogs'] = 'Send history';
-$string['nologs'] = 'No send records found.';
-$string['timescheduled'] = 'Scheduled';
-$string['timesent'] = 'Sent';
-$string['retries'] = 'Retries';
-$string['error'] = 'Error';
-
-// Send statuses.
-$string['sent'] = 'Sent';
-$string['failed'] = 'Failed';
-$string['pending'] = 'Pending';
-$string['retry'] = 'Retrying';
-
-// Tools.
-$string['tools'] = 'Tools';
-$string['testemail'] = 'Test email';
-$string['testreports'] = 'Test reports';
-$string['testemailinfo'] = 'Use this tool to test sending emails from the platform.';
-$string['testreportsinfo'] = 'Use this tool to test course report generation.';
-$string['emailconfig'] = 'Email configuration';
-$string['sendtestemail'] = 'Send test email';
-$string['options'] = 'Options';
-$string['includeattachment'] = 'Include test attachment';
-$string['testemailsent'] = 'Test email sent successfully to';
-$string['testemailfailed'] = 'Error sending test email.';
-
-// Actions.
-$string['togglestatus'] = 'Toggle status';
-$string['confirmdelete'] = 'Are you sure you want to delete this item?';
-$string['scheduledeleted'] = 'Schedule deleted successfully.';
-$string['schedulecreated'] = 'Schedule created successfully.';
-$string['scheduleupdated'] = 'Schedule updated successfully.';
-$string['edit'] = 'Edit';
-$string['delete'] = 'Delete';
-$string['save'] = 'Save';
-$string['cancel'] = 'Cancel';
-
-// Placeholders.
-$string['availableplaceholders'] = 'Available placeholders';
-$string['placeholder_coursename'] = 'Full course name';
-$string['placeholder_courseshortname'] = 'Short course name';
-$string['placeholder_date'] = 'Current date (short format)';
-$string['placeholder_datetime'] = 'Current date and time';
-$string['placeholder_recipientname'] = 'Recipient name';
-$string['placeholder_recipientemail'] = 'Recipient email';
-
-// Errors.
-$string['error:invalidcourseid'] = 'Invalid course ID.';
-$string['error:invalidscheduleid'] = 'Invalid schedule ID.';
-$string['error:nopermission'] = 'You do not have permission to perform this action.';
-
-// Capabilities.
-$string['epicereports:view'] = 'View EpicE reports';
-$string['epicereports:manage'] = 'Manage EpicE reports';
-
-// Form validation errors.
-$string['error:nodaysselected'] = 'You must select at least one day of the week.';
-$string['error:enddatebeforestart'] = 'End date must be after start date.';
-$string['error:noreportselected'] = 'You must select at least one report type.';
-
-// Help strings.
-$string['schedulename_help'] = 'Descriptive name to identify this schedule.';
-$string['startdate_help'] = 'Date from which the report will start being sent.';
-$string['enddate_help'] = 'Date until which the report will be sent. Leave empty for indefinite sending.';
-$string['sendtime_help'] = 'Time of day when the report will be sent.';
-$string['senddays_help'] = 'Days of the week when the report will be sent.';
-$string['includecourseexcel_help'] = 'Include the Excel report with student progress.';
-$string['includefeedbackexcel_help'] = 'Include the satisfaction survey report.';
-$string['emailsubject_help'] = 'Email subject. You can use placeholders like {coursename}.';
-$string['emailbody_help'] = 'Email body. You can use placeholders like {coursename}, {date}, {recipientname}.';
-
-// Manual send.
-$string['sendnow'] = 'Send now';
-$string['confirmsendnow'] = 'Are you sure you want to send this report now to all configured recipients?';
-$string['manualsend:success'] = 'Report sent successfully to {$a} recipient(s).';
-$string['manualsend:partial'] = 'Report sent with some errors: {$a->success} successful, {$a->errors} failed.';
-$string['error:norecipients'] = 'There are no recipients configured for this schedule.';
-$string['error:noreportsgenerated'] = 'Could not generate the reports.';
-$string['error:sendfailed'] = 'Error sending the report';
-$string['error:invalidscheduleid'] = 'Invalid schedule ID.';
-
-// Manual send.
-$string['sendnow'] = 'Send now';
-$string['confirmsendnow'] = 'Are you sure you want to send the report now to all enabled recipients?';
-$string['manualsend:success'] = 'Report successfully sent to {$a} recipient(s).';
-$string['manualsend:partial'] = 'Partial send: {$a->success} successful, {$a->errors} error(s).';
-$string['error:norecipients'] = 'No enabled recipients for this schedule.';
-$string['error:noreportsgenerated'] = 'Could not generate any reports.';
-$string['error:sendfailed'] = 'Error sending the report';
-$string['error:invalidscheduleid'] = 'Invalid schedule ID.';
 
 // Placeholders.
 $string['availableplaceholders'] = 'Available placeholders';
 $string['placeholder:coursename'] = 'Course name';
 $string['placeholder:date'] = 'Report date';
 $string['placeholder:recipientname'] = 'Recipient name';
+
+// Recipients.
+$string['recipients'] = 'Recipients';
+$string['recipient'] = 'Recipient';
 $string['recipientsinstructions'] = 'Recipients are configured after saving the schedule.';
 $string['recipientsconfigured'] = 'recipient(s) configured';
+$string['addrecipient'] = 'Add Recipient';
+$string['norecipients'] = 'No recipients configured.';
+$string['recipientadded'] = 'Recipient added successfully.';
+$string['recipientdeleted'] = 'Recipient deleted successfully.';
+
+// Status.
+$string['status'] = 'Status';
+$string['enabled'] = 'Enabled';
+$string['disabled'] = 'Disabled';
+$string['active'] = 'Active';
+$string['inactive'] = 'Inactive';
+$string['togglestatus'] = 'Toggle status';
+
+// Actions.
+$string['actions'] = 'Actions';
+$string['edit'] = 'Edit';
+$string['delete'] = 'Delete';
+$string['save'] = 'Save';
+$string['cancel'] = 'Cancel';
+$string['add'] = 'Add';
+$string['clear'] = 'Clear';
+$string['confirmdelete'] = 'Are you sure you want to delete this item?';
+
+// Manual Send.
+$string['sendnow'] = 'Send Now';
+$string['confirmsendnow'] = 'Are you sure you want to send the report now to all enabled recipients?';
+$string['manualsend:success'] = 'Report sent successfully to {$a} recipient(s).';
+$string['manualsend:partial'] = 'Partial send: {$a->success} successful, {$a->errors} error(s).';
+
+// Logs / History.
+$string['logs'] = 'Send History';
+$string['reportlogs'] = 'Send History';
+$string['nologs'] = 'No send records found.';
+$string['logdate'] = 'Date';
+$string['logemail'] = 'Email';
+$string['logstatus'] = 'Status';
+$string['logattachments'] = 'Attachments';
+$string['logerror'] = 'Error';
+
+// Log table columns.
+$string['timescheduled'] = 'Scheduled Date';
+$string['timesent'] = 'Sent Date';
+$string['retries'] = 'Retries';
+
+// Filter.
+$string['filter'] = 'Filter';
+$string['all'] = 'All';
+$string['results'] = 'Results';
+$string['count'] = 'Total';
+
+// Status values.
+$string['success'] = 'Success';
+$string['error'] = 'Error';
+$string['pending'] = 'Pending';
+$string['sent'] = 'Sent';
+$string['failed'] = 'Failed';
+
+// Tools.
+$string['tools'] = 'Tools';
+$string['testreports'] = 'Test Reports';
+$string['testreportsinfo'] = 'Generate and download test reports to verify the configuration.';
+$string['testemail'] = 'Test Email';
+$string['generatereport'] = 'Generate Report';
+$string['sendemail'] = 'Send Email';
+$string['downloadreport'] = 'Download Report';
+
+// Export.
+$string['exporttoexcel'] = 'Export to Excel';
+$string['exportfeedback'] = 'Export feedback';
+$string['downloadexcel'] = 'Download Excel';
+$string['preview'] = 'Preview';
+$string['previewdescription'] = 'Preview of data to export.';
+$string['generatedby'] = 'Generated by';
+$string['nofilesfound'] = 'No files found.';
+$string['nofilesfound_help'] = 'Verify that the course has data to export.';
+
+// Form fields.
+$string['email'] = 'Email';
+$string['name'] = 'Name';
+$string['type'] = 'Type';
+$string['optional'] = 'optional';
+$string['criteria'] = 'Criteria';
+$string['summary'] = 'Summary';
+
+// Yes/No.
+$string['yes'] = 'Yes';
+$string['no'] = 'No';
+$string['nousers'] = 'No users.';
+
+// Error messages.
+$string['error:invalidscheduleid'] = 'Invalid schedule ID.';
+$string['error:norecipients'] = 'No enabled recipients for this schedule.';
+$string['error:noreportsgenerated'] = 'Could not generate any reports.';
+$string['error:sendfailed'] = 'Error sending report';
+$string['error:nodaysselected'] = 'You must select at least one day of the week.';
+$string['error:enddatebeforestart'] = 'End date must be after start date.';
+$string['error:noreportselected'] = 'You must select at least one report type.';
+
+// Capabilities.
+$string['epicereports:view'] = 'View EpicE reports';
+$string['epicereports:manage'] = 'Manage EpicE reports';
+
+// Task.
+$string['task:sendscheduledreports'] = 'Send scheduled reports';
+$string['task:cleanuptempfiles'] = 'Cleanup temporary files';

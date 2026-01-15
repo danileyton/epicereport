@@ -165,10 +165,20 @@ if (empty($logs)) {
         echo html_writer::tag('td', s($log->recipientemail));
         
         $badge_type = 'secondary';
-        if ($log->status === 'sent') $badge_type = 'success';
-        else if ($log->status === 'failed') $badge_type = 'danger';
-        else if ($log->status === 'pending') $badge_type = 'warning';
-        echo html_writer::tag('td', local_epicereports_render_badge(get_string($log->status, 'local_epicereports'), $badge_type));
+        $status_text = $log->status;
+        
+        // Mapear estados a badges y textos
+        if ($log->status === 'sent' || $log->status === 'success') {
+            $badge_type = 'success';
+            $status_text = 'success';
+        } else if ($log->status === 'failed' || $log->status === 'error') {
+            $badge_type = 'danger';
+            $status_text = 'failed';
+        } else if ($log->status === 'pending') {
+            $badge_type = 'warning';
+            $status_text = 'pending';
+        }
+        echo html_writer::tag('td', local_epicereports_render_badge(get_string($status_text, 'local_epicereports'), $badge_type));
         
         $timesent = $log->timesent ? userdate($log->timesent, '%Y-%m-%d %H:%M') : '-';
         echo html_writer::tag('td', $timesent);

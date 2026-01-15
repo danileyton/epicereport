@@ -60,19 +60,32 @@ if ($action === 'sendnow' && $id && confirm_sesskey()) {
         } else {
             try {
                 // Generar reportes.
+                // $attachments contendrá arrays con ['filepath' => '...', 'filename' => '...']
                 $attachments = [];
+                $attachment_names = []; // Para el log
+                $files_to_cleanup = []; // Para limpiar después
                 
                 if (!empty($schedule->include_course_report)) {
                     $course_report = report_generator::generate_course_excel($courseid);
-                    if ($course_report) {
-                        $attachments[] = $course_report;
+                    if (!empty($course_report['success']) && !empty($course_report['filepath'])) {
+                        $attachments[] = [
+                            'filepath' => $course_report['filepath'],
+                            'filename' => $course_report['filename']
+                        ];
+                        $attachment_names[] = $course_report['filename'];
+                        $files_to_cleanup[] = $course_report['filepath'];
                     }
                 }
                 
                 if (!empty($schedule->include_feedback_report)) {
                     $feedback_report = report_generator::generate_feedback_excel($courseid);
-                    if ($feedback_report) {
-                        $attachments[] = $feedback_report;
+                    if (!empty($feedback_report['success']) && !empty($feedback_report['filepath'])) {
+                        $attachments[] = [
+                            'filepath' => $feedback_report['filepath'],
+                            'filename' => $feedback_report['filename']
+                        ];
+                        $attachment_names[] = $feedback_report['filename'];
+                        $files_to_cleanup[] = $feedback_report['filepath'];
                     }
                 }
                 
@@ -93,10 +106,11 @@ if ($action === 'sendnow' && $id && confirm_sesskey()) {
                             $recipient->id,
                             time(),
                             'pending',
-                            array_map('basename', $attachments)
+                            $attachment_names
                         );
                         
                         // Enviar correo usando el método existente.
+                        // send_report_email espera $attachments como array de arrays con filepath/filename
                         $result = email_sender::send_report_email(
                             $schedule,
                             $recipient,
@@ -105,9 +119,10 @@ if ($action === 'sendnow' && $id && confirm_sesskey()) {
                         );
                         
                         // Actualizar log con resultado.
+                        // Usar 'sent' para éxito y 'failed' para error (valores estándar)
                         schedule_manager::update_log_status(
                             $logid,
-                            $result['success'] ? 'success' : 'error',
+                            $result['success'] ? 'sent' : 'failed',
                             $result['success'] ? null : ($result['errorcode'] ?? 'UNKNOWN'),
                             $result['success'] ? null : ($result['error'] ?? 'Unknown error')
                         );
@@ -123,7 +138,7 @@ if ($action === 'sendnow' && $id && confirm_sesskey()) {
                     schedule_manager::mark_schedule_run($id);
                     
                     // Limpiar archivos temporales.
-                    foreach ($attachments as $file) {
+                    foreach ($files_to_cleanup as $file) {
                         if (file_exists($file)) {
                             @unlink($file);
                         }
