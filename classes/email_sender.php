@@ -118,6 +118,9 @@ class email_sender {
     /**
      * Send reports to all recipients of a schedule.
      *
+     * Optimizado para crear el ZIP de adjuntos una sola vez y reutilizarlo
+     * para todos los destinatarios.
+     *
      * @param object $schedule The schedule object.
      * @param array $attachments Array of attachment files.
      * @return array ['total' => int, 'sent' => int, 'failed' => int, 'results' => array]
@@ -134,6 +137,15 @@ class email_sender {
         ];
 
         $now = time();
+        
+        // Preparar los adjuntos UNA SOLA VEZ (puede crear un ZIP si hay múltiples archivos).
+        $attachmentdata = self::prepare_attachments($attachments);
+        $filenames_for_log = array_column($attachments, 'filename');
+        
+        // Si se creó un ZIP, agregar esa info al log.
+        if (!empty($attachmentdata['cleanup'])) {
+            $filenames_for_log[] = '(ZIP: ' . $attachmentdata['filenames'] . ')';
+        }
 
         foreach ($recipients as $recipient) {
             // Create log entry.
@@ -144,11 +156,16 @@ class email_sender {
                 $recipient->id,
                 $now,
                 'pending',
-                array_column($attachments, 'filename')
+                $filenames_for_log
             );
 
-            // Send email.
-            $sendresult = self::send_report_email($schedule, $recipient, $attachments, $course);
+            // Send email usando los adjuntos ya preparados.
+            $sendresult = self::send_report_email_prepared(
+                $schedule, 
+                $recipient, 
+                $attachmentdata, 
+                $course
+            );
 
             // Update log.
             if ($sendresult['success']) {
@@ -171,8 +188,98 @@ class email_sender {
                 'logid'     => $logid,
             ];
         }
+        
+        // Limpiar archivos ZIP temporales después de enviar a todos.
+        if (!empty($attachmentdata['cleanup'])) {
+            foreach ($attachmentdata['cleanup'] as $filepath) {
+                if (file_exists($filepath)) {
+                    @unlink($filepath);
+                }
+            }
+        }
 
         return $results;
+    }
+    
+    /**
+     * Send report email with pre-prepared attachments.
+     * 
+     * Versión interna que usa adjuntos ya preparados (evita crear ZIP múltiples veces).
+     *
+     * @param object $schedule The schedule object.
+     * @param object $recipient The recipient object.
+     * @param array $attachmentdata Prepared attachment data from prepare_attachments().
+     * @param object|null $course Optional course object.
+     * @return array ['success' => bool, 'error' => string, 'errorcode' => string]
+     */
+    private static function send_report_email_prepared(
+        object $schedule,
+        object $recipient,
+        array $attachmentdata,
+        ?object $course = null
+    ): array {
+        global $DB, $CFG, $SITE;
+
+        try {
+            // Load course if not provided.
+            if (!$course) {
+                $course = get_course($schedule->courseid);
+            }
+
+            // Get or create recipient user object.
+            $touser = self::get_recipient_user($recipient);
+
+            // Get the "from" user (noreply or support).
+            $fromuser = self::get_from_user();
+
+            // Prepare subject and body with placeholders replaced.
+            $subject = self::replace_placeholders(
+                $schedule->email_subject ?: get_string('emailsubjectdefault', 'local_epicereports'),
+                $course,
+                $touser
+            );
+
+            $body = self::replace_placeholders(
+                $schedule->email_body ?: get_string('emailbodydefault', 'local_epicereports'),
+                $course,
+                $touser
+            );
+
+            // Convert body to HTML.
+            $bodyhtml = self::text_to_html($body);
+
+            // Send the email con los adjuntos ya preparados.
+            $result = self::do_send_email(
+                $touser,
+                $fromuser,
+                $subject,
+                $body,
+                $bodyhtml,
+                $attachmentdata['files'],
+                $attachmentdata['filenames']
+            );
+
+            if ($result) {
+                return [
+                    'success'   => true,
+                    'error'     => '',
+                    'errorcode' => '',
+                ];
+            } else {
+                return [
+                    'success'   => false,
+                    'error'     => 'La función email_to_user() retornó false',
+                    'errorcode' => 'EMAIL_SEND_FAILED',
+                ];
+            }
+
+        } catch (\Exception $e) {
+            return [
+                'success'   => false,
+                'error'     => $e->getMessage(),
+                'errorcode' => 'EXCEPTION',
+            ];
+        }
     }
 
     /**
@@ -412,8 +519,12 @@ class email_sender {
     /**
      * Prepare attachment files for email_to_user().
      *
+     * Cuando hay múltiples archivos, los combina en un ZIP ya que
+     * email_to_user() de Moodle solo soporta un archivo adjunto.
+     *
      * @param array $attachments Array of ['filepath' => string, 'filename' => string].
-     * @return array ['files' => string, 'filenames' => string] Comma-separated lists.
+     * @return array ['files' => string, 'filenames' => string, 'cleanup' => array] 
+     *               El array 'cleanup' contiene archivos temporales a eliminar después del envío.
      */
     private static function prepare_attachments(array $attachments): array {
         $files = [];
@@ -426,28 +537,125 @@ class email_sender {
             }
         }
 
-        // Para Moodle 4.0+, email_to_user() puede aceptar arrays para múltiples adjuntos.
-        // Si solo hay un archivo, devolvemos string; si hay varios, devolvemos el primer archivo.
-        // Para múltiples archivos, usaremos PHPMailer directamente o envíos separados.
+        // Si no hay archivos válidos.
         if (count($files) === 0) {
             return [
                 'files'     => '',
                 'filenames' => '',
+                'cleanup'   => [],
             ];
-        } else if (count($files) === 1) {
+        }
+        
+        // Si hay un solo archivo, devolverlo directamente.
+        if (count($files) === 1) {
             return [
                 'files'     => $files[0],
                 'filenames' => $filenames[0],
+                'cleanup'   => [],
             ];
-        } else {
-            // Moodle's email_to_user solo soporta UN adjunto de forma nativa.
-            // Combinamos los archivos en un ZIP o enviamos solo el primero.
-            // Por ahora, enviamos el primer archivo y registramos advertencia.
-            debugging('email_sender: Multiple attachments detected, only first will be sent. Files: ' . 
+        }
+        
+        // MÚLTIPLES ARCHIVOS: Crear un ZIP que contenga todos los reportes.
+        // Moodle's email_to_user() solo soporta UN adjunto de forma nativa.
+        $zipresult = self::create_attachments_zip($files, $filenames);
+        
+        if ($zipresult['success']) {
+            debugging('email_sender: Created ZIP with ' . count($files) . ' files: ' . 
                       implode(', ', $filenames), DEBUG_DEVELOPER);
             return [
+                'files'     => $zipresult['filepath'],
+                'filenames' => $zipresult['filename'],
+                'cleanup'   => [$zipresult['filepath']], // Marcar ZIP para limpieza posterior
+            ];
+        } else {
+            // Si falla la creación del ZIP, enviar solo el primer archivo.
+            debugging('email_sender: Failed to create ZIP, sending only first file. Error: ' . 
+                      $zipresult['error'], DEBUG_DEVELOPER);
+            return [
                 'files'     => $files[0],
                 'filenames' => $filenames[0],
+                'cleanup'   => [],
+            ];
+        }
+    }
+
+    /**
+     * Create a ZIP file containing multiple attachments.
+     *
+     * @param array $files Array of file paths.
+     * @param array $filenames Array of file names to use inside the ZIP.
+     * @return array ['success' => bool, 'filepath' => string, 'filename' => string, 'error' => string]
+     */
+    private static function create_attachments_zip(array $files, array $filenames): array {
+        global $CFG;
+        
+        try {
+            // Crear nombre único para el ZIP.
+            $zipfilename = 'reportes_' . date('Ymd_His') . '_' . uniqid() . '.zip';
+            $tempdir = $CFG->tempdir . '/local_epicereports/reports';
+            
+            // Asegurar que el directorio existe.
+            if (!is_dir($tempdir)) {
+                if (!mkdir($tempdir, 0777, true)) {
+                    return [
+                        'success'  => false,
+                        'filepath' => '',
+                        'filename' => '',
+                        'error'    => 'No se pudo crear el directorio temporal',
+                    ];
+                }
+            }
+            
+            $zippath = $tempdir . '/' . $zipfilename;
+            
+            // Crear el archivo ZIP.
+            $zip = new \ZipArchive();
+            $result = $zip->open($zippath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+            
+            if ($result !== true) {
+                return [
+                    'success'  => false,
+                    'filepath' => '',
+                    'filename' => '',
+                    'error'    => 'No se pudo crear el archivo ZIP (código: ' . $result . ')',
+                ];
+            }
+            
+            // Agregar cada archivo al ZIP.
+            for ($i = 0; $i < count($files); $i++) {
+                $filepath = $files[$i];
+                $filename = $filenames[$i];
+                
+                if (file_exists($filepath)) {
+                    $zip->addFile($filepath, $filename);
+                }
+            }
+            
+            $zip->close();
+            
+            // Verificar que el ZIP se creó correctamente.
+            if (!file_exists($zippath) || filesize($zippath) === 0) {
+                return [
+                    'success'  => false,
+                    'filepath' => '',
+                    'filename' => '',
+                    'error'    => 'El archivo ZIP está vacío o no se creó',
+                ];
+            }
+            
+            return [
+                'success'  => true,
+                'filepath' => $zippath,
+                'filename' => $zipfilename,
+                'error'    => '',
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success'  => false,
+                'filepath' => '',
+                'filename' => '',
+                'error'    => $e->getMessage(),
             ];
         }
     }

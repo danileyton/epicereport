@@ -205,40 +205,80 @@ class send_scheduled_reports extends \core\task\scheduled_task {
 
     /**
      * Additional verification that a schedule is ready to run.
+     * 
+     * Esta función verifica:
+     * 1. Que esté habilitada
+     * 2. Que estemos dentro del rango de fechas
+     * 3. Que hoy sea un día habilitado
+     * 4. Que NO se haya ejecutado ya hoy (evita re-ejecuciones)
+     * 5. Que la hora de envío ya haya llegado
      *
      * @param object $schedule The schedule object.
      * @return bool True if ready.
      */
     private function is_schedule_ready(object $schedule): bool {
-        // Already checked in get_pending_schedules, but double-check here.
-        if (!$schedule->enabled) {
+        // Must be enabled.
+        if (empty($schedule->enabled)) {
             return false;
         }
 
         $now = time();
+        $timezone = date_default_timezone_get();
 
         // Check date range.
-        if ($schedule->startdate && $now < $schedule->startdate) {
+        if (!empty($schedule->startdate) && $now < $schedule->startdate) {
             return false;
         }
 
-        if ($schedule->enddate && $now > $schedule->enddate) {
+        if (!empty($schedule->enddate) && $now > $schedule->enddate) {
             return false;
         }
 
         // Check day of week.
         $currentday = strtolower(date('l'));
         $daymap = [
-            'monday'    => $schedule->monday,
-            'tuesday'   => $schedule->tuesday,
-            'wednesday' => $schedule->wednesday,
-            'thursday'  => $schedule->thursday,
-            'friday'    => $schedule->friday,
-            'saturday'  => $schedule->saturday,
-            'sunday'    => $schedule->sunday,
+            'monday'    => !empty($schedule->monday),
+            'tuesday'   => !empty($schedule->tuesday),
+            'wednesday' => !empty($schedule->wednesday),
+            'thursday'  => !empty($schedule->thursday),
+            'friday'    => !empty($schedule->friday),
+            'saturday'  => !empty($schedule->saturday),
+            'sunday'    => !empty($schedule->sunday),
         ];
 
         if (empty($daymap[$currentday])) {
+            return false;
+        }
+        
+        // CRÍTICO: Verificar si ya se ejecutó HOY
+        if (!empty($schedule->lastrun)) {
+            $lastrunDate = new \DateTime('@' . $schedule->lastrun);
+            $lastrunDate->setTimezone(new \DateTimeZone($timezone));
+            
+            $todayDate = new \DateTime('@' . $now);
+            $todayDate->setTimezone(new \DateTimeZone($timezone));
+            
+            // Si lastrun es de hoy, NO ejecutar de nuevo
+            if ($lastrunDate->format('Y-m-d') === $todayDate->format('Y-m-d')) {
+                mtrace("    → Ya se ejecutó hoy ({$lastrunDate->format('Y-m-d H:i:s')}), omitiendo...");
+                return false;
+            }
+        }
+        
+        // Verificar que la hora de envío programada ya haya llegado
+        $timeParts = explode(':', $schedule->sendtime ?? '08:00');
+        $sendHour = (int)($timeParts[0] ?? 8);
+        $sendMinute = (int)($timeParts[1] ?? 0);
+        
+        $currentHour = (int)date('G'); // 0-23
+        $currentMinute = (int)date('i');
+        
+        // Convertir a minutos desde medianoche para comparar
+        $scheduledMinutes = ($sendHour * 60) + $sendMinute;
+        $currentMinutes = ($currentHour * 60) + $currentMinute;
+        
+        if ($currentMinutes < $scheduledMinutes) {
+            mtrace("    → Aún no es la hora de envío ({$schedule->sendtime}), hora actual: " . date('H:i'));
             return false;
         }
 

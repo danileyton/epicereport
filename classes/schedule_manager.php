@@ -55,6 +55,15 @@ class schedule_manager {
 
     /**
      * Get all enabled schedules that are due to run.
+     * 
+     * NOTA: Esta consulta devuelve schedules que PODRÍAN estar listos.
+     * La verificación final se hace en is_schedule_ready() de la tarea.
+     * 
+     * Criterios:
+     * - enabled = 1
+     * - startdate <= now
+     * - enddate es null o >= now  
+     * - nextrun es null o <= now (significa que la hora programada ya pasó)
      *
      * @param int|null $timestamp Current timestamp to check against (defaults to now).
      * @return array Array of schedule objects ready to run.
@@ -65,19 +74,24 @@ class schedule_manager {
         if ($timestamp === null) {
             $timestamp = time();
         }
+        
+        // Calcular el inicio del día actual (medianoche) para comparaciones
+        $startOfToday = strtotime('today midnight');
 
         $sql = "SELECT s.*
                   FROM {" . self::TABLE_SCHEDULES . "} s
                  WHERE s.enabled = 1
                    AND s.startdate <= :now1
-                   AND (s.enddate IS NULL OR s.enddate >= :now2)
+                   AND (s.enddate IS NULL OR s.enddate = 0 OR s.enddate >= :now2)
                    AND (s.nextrun IS NULL OR s.nextrun <= :now3)
+                   AND (s.lastrun IS NULL OR s.lastrun < :startoftoday)
               ORDER BY s.nextrun ASC";
 
         return $DB->get_records_sql($sql, [
             'now1' => $timestamp,
             'now2' => $timestamp,
             'now3' => $timestamp,
+            'startoftoday' => $startOfToday,
         ]);
     }
 
@@ -204,6 +218,10 @@ class schedule_manager {
 
     /**
      * Calculate the next run timestamp for a schedule.
+     * 
+     * IMPORTANTE: Esta función siempre debe devolver un timestamp FUTURO.
+     * Después de ejecutar, el nextrun debe ser al menos el día siguiente
+     * (o el próximo día habilitado) para evitar re-ejecuciones el mismo día.
      *
      * @param object $schedule The schedule object.
      * @return int|null The next run timestamp or null if no valid next run.
@@ -215,37 +233,59 @@ class schedule_manager {
 
         // Get enabled days as array (1=Monday, 7=Sunday in PHP).
         $enabledDays = [];
-        if ($schedule->monday) $enabledDays[] = 1;
-        if ($schedule->tuesday) $enabledDays[] = 2;
-        if ($schedule->wednesday) $enabledDays[] = 3;
-        if ($schedule->thursday) $enabledDays[] = 4;
-        if ($schedule->friday) $enabledDays[] = 5;
-        if ($schedule->saturday) $enabledDays[] = 6;
-        if ($schedule->sunday) $enabledDays[] = 7;
+        if (!empty($schedule->monday)) $enabledDays[] = 1;
+        if (!empty($schedule->tuesday)) $enabledDays[] = 2;
+        if (!empty($schedule->wednesday)) $enabledDays[] = 3;
+        if (!empty($schedule->thursday)) $enabledDays[] = 4;
+        if (!empty($schedule->friday)) $enabledDays[] = 5;
+        if (!empty($schedule->saturday)) $enabledDays[] = 6;
+        if (!empty($schedule->sunday)) $enabledDays[] = 7;
 
         if (empty($enabledDays)) {
             return null;
         }
 
         // Parse send time.
-        $timeParts = explode(':', $schedule->sendtime);
+        $timeParts = explode(':', $schedule->sendtime ?? '08:00');
         $sendHour = (int)($timeParts[0] ?? 8);
         $sendMinute = (int)($timeParts[1] ?? 0);
 
-        // Start from now or lastrun, whichever is later.
         $now = time();
-        $baseTime = max($now, $schedule->lastrun ?? 0);
+        $timezone = new \DateTimeZone(date_default_timezone_get());
+        
+        // Crear fecha base desde AHORA
+        $baseDate = new \DateTime('@' . $now);
+        $baseDate->setTimezone($timezone);
+        
+        // Si ya se ejecutó hoy (lastrun es de hoy), empezar desde MAÑANA
+        if (!empty($schedule->lastrun)) {
+            $lastrunDate = new \DateTime('@' . $schedule->lastrun);
+            $lastrunDate->setTimezone($timezone);
+            
+            // Si lastrun es de hoy, el próximo run debe ser mañana o después
+            if ($lastrunDate->format('Y-m-d') === $baseDate->format('Y-m-d')) {
+                $baseDate->modify('+1 day');
+            }
+        }
+        
+        // Establecer la hora de envío en la fecha base
+        $baseDate->setTime($sendHour, $sendMinute, 0);
+        
+        // Si la hora de hoy ya pasó y no hemos ejecutado hoy, pasar a mañana
+        if ($baseDate->getTimestamp() <= $now && empty($schedule->lastrun)) {
+            $baseDate->modify('+1 day');
+        } else if ($baseDate->getTimestamp() <= $now) {
+            // La hora ya pasó, ir al día siguiente
+            $baseDate->modify('+1 day');
+        }
 
-        // If we have a lastrun on the same day but time has passed, start from tomorrow.
-        $baseDate = new \DateTime('@' . $baseTime);
-        $baseDate->setTimezone(new \DateTimeZone(date_default_timezone_get()));
-
-        // Try to find next valid day within 8 days (covers all weekdays).
+        // Buscar el próximo día válido dentro de los próximos 8 días
         for ($i = 0; $i <= 7; $i++) {
             $checkDate = clone $baseDate;
-            $checkDate->modify("+{$i} days");
-            $checkDate->setTime($sendHour, $sendMinute, 0);
-
+            if ($i > 0) {
+                $checkDate->modify("+{$i} days");
+            }
+            
             $dayOfWeek = (int)$checkDate->format('N'); // 1=Monday, 7=Sunday
 
             // Check if this day is enabled.
@@ -255,21 +295,19 @@ class schedule_manager {
 
             $checkTimestamp = $checkDate->getTimestamp();
 
-            // Must be in the future.
-            if ($checkTimestamp <= $now) {
-                continue;
-            }
-
             // Must be within schedule date range.
-            if ($checkTimestamp < $schedule->startdate) {
+            if (!empty($schedule->startdate) && $checkTimestamp < $schedule->startdate) {
                 continue;
             }
 
-            if ($schedule->enddate && $checkTimestamp > $schedule->enddate) {
+            if (!empty($schedule->enddate) && $checkTimestamp > $schedule->enddate) {
                 return null; // Schedule has ended.
             }
 
-            return $checkTimestamp;
+            // Asegurar que el timestamp sea ESTRICTAMENTE futuro
+            if ($checkTimestamp > $now) {
+                return $checkTimestamp;
+            }
         }
 
         return null;
