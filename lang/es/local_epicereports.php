@@ -262,7 +262,157 @@ $string['error:noreportselected'] = 'Debe seleccionar al menos un tipo de report
 // Capabilities.
 $string['epicereports:view'] = 'Ver reportes EpicE';
 $string['epicereports:manage'] = 'Gestionar reportes EpicE';
+$string['epicereports:viewstudents'] = 'Ver reportes de alumnos';
+$string['epicereports:managefollowup'] = 'Gestionar mensajes de seguimiento';
 
 // Task.
 $string['task:sendscheduledreports'] = 'Enviar reportes programados';
 $string['task:cleanuptempfiles'] = 'Limpiar archivos temporales';
+$string['task:sendfollowupmessages'] = 'Enviar mensajes de seguimiento';
+
+// =====================================================================
+// F1: Reporte Individual de Alumnos
+// =====================================================================
+
+// Students list.
+$string['studentslist'] = 'Listado de alumnos';
+$string['studentreport'] = 'Reporte del alumno';
+$string['studentdetail'] = 'Detalle del alumno';
+$string['viewstudent'] = 'Ver alumno';
+$string['nostudents'] = 'No hay alumnos registrados.';
+$string['searchstudent'] = 'Buscar alumno';
+$string['searchbyname'] = 'Buscar por nombre o email';
+
+// Student filters.
+$string['filterby'] = 'Filtrar por';
+$string['cohort'] = 'Cohorte';
+$string['allcohorts'] = 'Todas las cohortes';
+$string['registrationdate'] = 'Fecha de registro';
+$string['company'] = 'Empresa';
+$string['allcompanies'] = 'Todas las empresas';
+$string['daterange'] = 'Rango de fechas';
+$string['datefrom'] = 'Desde';
+$string['dateto'] = 'Hasta';
+
+// Student info.
+$string['studentinfo'] = 'Información del alumno';
+$string['personaldata'] = 'Datos personales';
+$string['registeredon'] = 'Registrado el';
+$string['lastlogin'] = 'Último acceso';
+
+// Student courses summary.
+$string['coursessummary'] = 'Resumen de cursos';
+$string['coursescompleted'] = 'Cursos completados';
+$string['coursesinprogress'] = 'Cursos en progreso';
+$string['coursesnotstarted'] = 'Cursos sin actividad';
+$string['totalenrolled'] = 'Total matriculados';
+$string['completionrate'] = 'Tasa de completación';
+
+// Student courses table.
+$string['enrolledcourses'] = 'Cursos matriculados';
+$string['coursename'] = 'Nombre del curso';
+$string['enrollmentdate'] = 'Fecha de matrícula';
+$string['downloadcertificate'] = 'Descargar diploma';
+$string['nocertificate'] = 'Sin diploma';
+$string['certificateavailable'] = 'Diploma disponible';
+
+// PDF Export.
+$string['exporttopdf'] = 'Exportar a PDF';
+$string['studentreportpdf'] = 'Reporte del alumno en PDF';
+$string['generatedby'] = 'Generado por';
+$string['generatedon'] = 'Generado el';
+$string['page'] = 'Página';
+$string['of'] = 'de';
+
+// Chart labels.
+$string['chartcompletedlabel'] = 'Completados';
+$string['chartinprogresslabel'] = 'En progreso';
+$string['chartnotstartedlabel'] = 'Sin actividad';
+
+// =====================================================================
+// F2: Mensajes de Seguimiento
+// =====================================================================
+
+// Followup messages.
+$string['followupmessages'] = 'Mensajes de seguimiento';
+$string['followupmessagesdesc'] = 'Envíe recordatorios automáticos a los alumnos que no han completado el curso.';
+$string['newfollowup'] = 'Nueva programación';
+$string['editfollowup'] = 'Editar programación';
+$string['deletefollowup'] = 'Eliminar programación';
+$string['nofollowups'] = 'No hay programaciones de seguimiento configuradas.';
+
+// Followup form.
+$string['followupname'] = 'Nombre de la programación';
+$string['followupname_help'] = 'Nombre descriptivo para identificar esta programación de mensajes.';
+$string['followupenabled'] = 'Programación activa';
+$string['targetstudents'] = 'Destinatarios';
+$string['targetstudents_help'] = 'Seleccione qué alumnos recibirán el mensaje de seguimiento.';
+$string['target_not_started'] = 'Alumnos que no han iniciado';
+$string['target_in_progress'] = 'Alumnos en progreso';
+$string['target_all_incomplete'] = 'Todos los no completados';
+
+// Channels.
+$string['sendchannels'] = 'Canales de envío';
+$string['sendchannels_help'] = 'Seleccione por qué canales se enviarán los mensajes.';
+$string['sendemail'] = 'Enviar por email externo';
+$string['sendmessage'] = 'Enviar por mensajería de Moodle';
+
+// Message content.
+$string['messagecontent'] = 'Contenido del mensaje';
+$string['messagesubject'] = 'Asunto del mensaje';
+$string['messagesubject_help'] = 'Asunto del mensaje. Puede usar marcadores como {username}, {coursename}.';
+$string['messagebody'] = 'Cuerpo del mensaje';
+$string['messagebody_help'] = 'Cuerpo del mensaje en HTML. Puede usar marcadores como {username}, {coursename}, {progress}.';
+$string['messagesubjectdefault'] = 'Recordatorio: Continúa tu curso {coursename}';
+$string['messagebodydefault'] = '<p>Hola {username},</p>
+<p>Te recordamos que tienes pendiente completar el curso <strong>{coursename}</strong>.</p>
+<p>Tu progreso actual es del {progress}%.</p>
+<p>¡Anímate a continuar con tu formación!</p>
+<p>Saludos cordiales.</p>';
+
+// Placeholders for followup.
+$string['placeholder:username'] = 'Nombre del alumno';
+$string['placeholder:useremail'] = 'Email del alumno';
+$string['placeholder:coursename'] = 'Nombre del curso';
+$string['placeholder:progress'] = 'Porcentaje de avance';
+$string['placeholder:duedate'] = 'Fecha límite del curso (si existe)';
+
+// Schedule settings.
+$string['schedulesettings'] = 'Configuración de programación';
+$string['specificdates'] = 'Fechas específicas';
+$string['specificdates_help'] = 'Ingrese fechas específicas de envío (una por línea, formato DD/MM/AAAA). Se enviarán mensajes en estas fechas además de los días de semana seleccionados.';
+$string['maxperuser'] = 'Límite por usuario';
+$string['maxperuser_help'] = 'Cantidad máxima de mensajes que puede recibir un usuario.';
+$string['maxperuser_daily'] = 'Máximo 1 por día';
+$string['maxperuser_weekly'] = 'Máximo 1 por semana';
+
+// Followup actions.
+$string['followupcreated'] = 'Programación de seguimiento creada exitosamente.';
+$string['followupupdated'] = 'Programación de seguimiento actualizada exitosamente.';
+$string['followupdeleted'] = 'Programación de seguimiento eliminada exitosamente.';
+$string['confirmfollowupdelete'] = '¿Está seguro que desea eliminar esta programación de seguimiento?';
+
+// Followup send now.
+$string['followupsendnow'] = 'Enviar ahora';
+$string['confirmfollowupsendnow'] = '¿Está seguro que desea enviar el mensaje de seguimiento ahora a todos los alumnos que cumplen los criterios?';
+$string['followupsent'] = 'Mensaje de seguimiento enviado a {$a} alumno(s).';
+$string['followupsentnone'] = 'No hay alumnos que cumplan los criterios para recibir el mensaje.';
+
+// Followup logs.
+$string['followuplogs'] = 'Historial de mensajes de seguimiento';
+$string['nofollowuplogs'] = 'No hay registros de mensajes de seguimiento.';
+$string['channel'] = 'Canal';
+$string['channel_email'] = 'Email';
+$string['channel_message'] = 'Mensajería Moodle';
+$string['channel_both'] = 'Ambos';
+
+// Preview.
+$string['previewmessage'] = 'Vista previa del mensaje';
+$string['previewsampledata'] = 'Datos de muestra para la vista previa';
+
+// Errors.
+$string['error:nochannelselected'] = 'Debe seleccionar al menos un canal de envío.';
+$string['error:invalidfollowupid'] = 'ID de programación de seguimiento inválido.';
+$string['error:nostudentsmatching'] = 'No hay alumnos que cumplan los criterios seleccionados.';
+$string['error:userlimitreached'] = 'El alumno ya recibió el máximo de mensajes permitidos.';
+$string['error:invaliddate'] = 'Fecha inválida: {$a}';

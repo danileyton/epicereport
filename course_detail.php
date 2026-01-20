@@ -288,6 +288,13 @@ if ($has_feedback) {
     );
 }
 
+// Mensajes de seguimiento.
+$followup_url = new moodle_url('/local/epicereports/followup_messages.php', ['courseid' => $courseid]);
+echo html_writer::link($followup_url, 
+    html_writer::tag('i', '', ['class' => 'fa fa-paper-plane']) . ' ' . get_string('followupmessages', 'local_epicereports'),
+    ['class' => 'epice-btn epice-btn-primary']
+);
+
 echo html_writer::end_div(); // btn-group
 
 // Tabla de usuarios.

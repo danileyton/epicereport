@@ -44,7 +44,6 @@
         <KEY NAME="createdby_fk" TYPE="foreign" FIELDS="createdby" REFTABLE="user" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="courseid_idx" UNIQUE="false" FIELDS="courseid"/>
         <INDEX NAME="enabled_nextrun_idx" UNIQUE="false" FIELDS="enabled, nextrun"/>
       </INDEXES>
     </TABLE>
@@ -67,7 +66,6 @@
         <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="scheduleid_idx" UNIQUE="false" FIELDS="scheduleid"/>
         <INDEX NAME="scheduleid_email_idx" UNIQUE="true" FIELDS="scheduleid, email"/>
       </INDEXES>
     </TABLE>
@@ -95,11 +93,78 @@
         <KEY NAME="courseid_fk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="scheduleid_idx" UNIQUE="false" FIELDS="scheduleid"/>
-        <INDEX NAME="courseid_idx" UNIQUE="false" FIELDS="courseid"/>
         <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
         <INDEX NAME="timescheduled_idx" UNIQUE="false" FIELDS="timescheduled"/>
         <INDEX NAME="status_timescheduled_idx" UNIQUE="false" FIELDS="status, timescheduled"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Tabla de programaciones de mensajes de seguimiento (F2) -->
+    <TABLE NAME="local_epicereports_followup" COMMENT="Programaciones de mensajes de seguimiento a alumnos no completados">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID del curso asociado"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Nombre descriptivo de la programación"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" COMMENT="1=activo, 0=inactivo"/>
+        <FIELD NAME="startdate" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Fecha de inicio (timestamp)"/>
+        <FIELD NAME="enddate" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Fecha de fin (timestamp), null=sin fin"/>
+        <FIELD NAME="sendtime" TYPE="char" LENGTH="5" NOTNULL="true" DEFAULT="09:00" COMMENT="Hora de envío en formato HH:MM"/>
+        <FIELD NAME="monday" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Enviar los lunes"/>
+        <FIELD NAME="tuesday" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Enviar los martes"/>
+        <FIELD NAME="wednesday" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Enviar los miércoles"/>
+        <FIELD NAME="thursday" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Enviar los jueves"/>
+        <FIELD NAME="friday" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Enviar los viernes"/>
+        <FIELD NAME="saturday" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Enviar los sábados"/>
+        <FIELD NAME="sunday" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Enviar los domingos"/>
+        <FIELD NAME="specific_dates" TYPE="text" NOTNULL="false" COMMENT="JSON con fechas específicas de envío"/>
+        <FIELD NAME="target_status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="all_incomplete" COMMENT="Filtro: not_started, in_progress, all_incomplete"/>
+        <FIELD NAME="send_email" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" COMMENT="Enviar por email externo"/>
+        <FIELD NAME="send_message" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" COMMENT="Enviar por mensajería Moodle"/>
+        <FIELD NAME="message_subject" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Asunto del mensaje"/>
+        <FIELD NAME="message_body" TYPE="text" NOTNULL="false" COMMENT="Cuerpo del mensaje en HTML"/>
+        <FIELD NAME="message_bodyformat" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" COMMENT="Formato del cuerpo (1=HTML)"/>
+        <FIELD NAME="max_per_user" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="daily" COMMENT="Límite por usuario: daily, weekly"/>
+        <FIELD NAME="lastrun" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Última ejecución exitosa (timestamp)"/>
+        <FIELD NAME="nextrun" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Próxima ejecución programada (timestamp)"/>
+        <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Usuario que creó la programación"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Fecha de creación"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Fecha de última modificación"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="courseid_fk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="createdby_fk" TYPE="foreign" FIELDS="createdby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enabled_nextrun_idx" UNIQUE="false" FIELDS="enabled, nextrun"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Tabla de logs de mensajes de seguimiento enviados (F2) -->
+    <TABLE NAME="local_epicereports_followup_logs" COMMENT="Registro histórico de mensajes de seguimiento enviados">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="followupid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID de la programación de seguimiento"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID del curso"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID del usuario destinatario"/>
+        <FIELD NAME="recipientemail" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Email del destinatario"/>
+        <FIELD NAME="channel" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="email" COMMENT="Canal: email, message, both"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" COMMENT="Estado: pending, sent, failed"/>
+        <FIELD NAME="errorcode" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Código de error si falló"/>
+        <FIELD NAME="errormessage" TYPE="text" NOTNULL="false" COMMENT="Mensaje de error detallado"/>
+        <FIELD NAME="timescheduled" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Fecha programada de envío"/>
+        <FIELD NAME="timesent" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Fecha real de envío"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Fecha de creación del registro"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="followupid_fk" TYPE="foreign" FIELDS="followupid" REFTABLE="local_epicereports_followup" REFFIELDS="id"/>
+        <KEY NAME="courseid_fk" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="followupid_userid_timesent_idx" UNIQUE="false" FIELDS="followupid, userid, timesent" COMMENT="Para verificar límites de envío"/>
       </INDEXES>
     </TABLE>
   </TABLES>

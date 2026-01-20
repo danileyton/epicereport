@@ -32,6 +32,12 @@ function local_epicereports_render_sidebar(string $active = '', ?stdClass $cours
             'url'   => new moodle_url('/local/epicereports/courses.php'),
             'icon'  => 'fa-book',
         ],
+        [
+            'id'    => 'students',
+            'label' => get_string('students', 'local_epicereports'),
+            'url'   => new moodle_url('/local/epicereports/students.php'),
+            'icon'  => 'fa-user-graduate',
+        ],
     ];
 
     // Opciones específicas de curso (solo si estamos viendo un curso).
@@ -64,6 +70,13 @@ function local_epicereports_render_sidebar(string $active = '', ?stdClass $cours
             'label' => get_string('reportlogs', 'local_epicereports'),
             'url'   => new moodle_url('/local/epicereports/schedule_logs.php', ['courseid' => $course->id]),
             'icon'  => 'fa-history',
+        ];
+        
+        $items[] = [
+            'id'    => 'followup',
+            'label' => get_string('followupmessages', 'local_epicereports'),
+            'url'   => new moodle_url('/local/epicereports/followup_messages.php', ['courseid' => $course->id]),
+            'icon'  => 'fa-paper-plane',
         ];
         
         // Separador y herramientas

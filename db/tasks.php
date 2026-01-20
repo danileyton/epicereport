@@ -28,4 +28,13 @@ $tasks = [
         'month'     => '*',
         'dayofweek' => '*',
     ],
+    [
+        'classname' => 'local_epicereports\task\send_followup_messages',
+        'blocking'  => 0,
+        'minute'    => '*/10',     // Ejecutar cada 10 minutos para verificar pendientes
+        'hour'      => '*',
+        'day'       => '*',
+        'month'     => '*',
+        'dayofweek' => '*',
+    ],
 ];

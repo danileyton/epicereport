@@ -50,4 +50,24 @@ $capabilities = [
         ],
     ],
 
+    // Capacidad para ver el reporte de alumnos individuales.
+    'local/epicereports:viewstudents' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+        ],
+    ],
+
+    // Capacidad para gestionar mensajes de seguimiento.
+    'local/epicereports:managefollowup' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+        ],
+    ],
+
 ];
