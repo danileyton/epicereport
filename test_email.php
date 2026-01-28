@@ -29,6 +29,9 @@ $PAGE->set_pagelayout('popup');
 $PAGE->set_title(get_string('testemail', 'local_epicereports'));
 $PAGE->set_heading(format_string($course->fullname));
 
+// Cargar estilos CSS ANTES de $OUTPUT->header().
+local_epicereports_include_styles();
+
 $message = '';
 $messagetype = '';
 $debug_info = [];
@@ -148,36 +151,17 @@ if ($action === 'send' && confirm_sesskey()) {
 
 echo $OUTPUT->header();
 
+// Estilos adicionales específicos para esta página.
 echo '<style>
-:root {
-    --epice-primary: #1e3a5f; --epice-accent: #0ea5e9; --epice-success: #10b981;
-    --epice-bg-card: #ffffff; --epice-bg-sidebar: linear-gradient(180deg, #1e3a5f 0%, #0f2744 100%);
-    --epice-bg-header: linear-gradient(135deg, #1e3a5f 0%, #2d5a8a 100%);
-    --epice-text-primary: #1e293b; --epice-text-secondary: #64748b; --epice-text-inverse: #ffffff;
-    --epice-border: #e2e8f0; --epice-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    --epice-radius: 8px; --epice-radius-md: 12px;
-}
-.epice-sidebar { background: var(--epice-bg-sidebar); border-radius: 16px; padding: 16px; box-shadow: var(--epice-shadow); }
-.epice-nav { list-style: none; padding: 0; margin: 0; }
-.epice-nav-link { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.8) !important; text-decoration: none !important; border-radius: var(--epice-radius); font-size: 0.9rem; }
-.epice-nav-link:hover { background: rgba(255,255,255,0.1); }
-.epice-nav-link.active { background: var(--epice-accent); color: white !important; }
-.epice-card { background: var(--epice-bg-card); border-radius: var(--epice-radius-md); box-shadow: var(--epice-shadow); margin-bottom: 24px; overflow: hidden; }
-.epice-card-header { background: var(--epice-bg-header); padding: 16px 24px; }
-.epice-card-title { color: var(--epice-text-inverse); font-size: 1.1rem; font-weight: 600; margin: 0; }
-.epice-card-body { padding: 24px; }
 .epice-form-group { margin-bottom: 16px; }
 .epice-form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--epice-text-secondary); margin-bottom: 4px; text-transform: uppercase; }
 .epice-form-input { width: 100%; padding: 10px 16px; border: 1px solid var(--epice-border); border-radius: var(--epice-radius); font-size: 0.9rem; }
-.epice-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; font-weight: 600; border-radius: var(--epice-radius); border: none; cursor: pointer; text-decoration: none !important; }
-.epice-btn-success { background: var(--epice-success); color: white !important; }
-.epice-btn-primary { background: var(--epice-primary); color: white !important; }
 .epice-debug { background: #1e293b; color: #10b981; padding: 16px; border-radius: var(--epice-radius); font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
 </style>';
 
 echo html_writer::start_div('row');
 echo html_writer::start_div('col-md-3 col-lg-2 mb-4');
-local_epicereports_render_sidebar('testemail', $course);
+local_epicereports_render_sidebar('test_email', $course);
 echo html_writer::end_div();
 
 echo html_writer::start_div('col-md-9 col-lg-10');

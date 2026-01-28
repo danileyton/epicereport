@@ -582,19 +582,48 @@ class schedule_manager {
      * @param int $scheduleid The schedule ID.
      * @param int $limit Maximum number of logs to return.
      * @param int $offset Offset for pagination.
+     * @param string|null $status Filter by status.
      * @return array Array of log objects.
      */
-    public static function get_logs_by_schedule(int $scheduleid, int $limit = 50, int $offset = 0): array {
+    public static function get_logs_by_schedule(int $scheduleid, int $limit = 50, int $offset = 0, ?string $status = null): array {
         global $DB;
 
-        return $DB->get_records(
+        $params = ['scheduleid' => $scheduleid];
+        $where = 'scheduleid = :scheduleid';
+
+        if ($status) {
+            $where .= ' AND status = :status';
+            $params['status'] = $status;
+        }
+
+        return $DB->get_records_select(
             self::TABLE_LOGS,
-            ['scheduleid' => $scheduleid],
+            $where,
+            $params,
             'timescheduled DESC',
             '*',
             $offset,
             $limit
         );
+    }
+
+    /**
+     * Count logs for a schedule.
+     *
+     * @param int $scheduleid The schedule ID.
+     * @param string|null $status Filter by status.
+     * @return int Number of logs.
+     */
+    public static function count_logs_by_schedule(int $scheduleid, ?string $status = null): int {
+        global $DB;
+
+        $params = ['scheduleid' => $scheduleid];
+
+        if ($status) {
+            $params['status'] = $status;
+        }
+
+        return $DB->count_records(self::TABLE_LOGS, $params);
     }
 
     /**

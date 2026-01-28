@@ -10,14 +10,86 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
+ * Incluye los estilos CSS del plugin.
+ * DEBE llamarse ANTES de $OUTPUT->header()
+ */
+function local_epicereports_include_styles(): void {
+    global $PAGE;
+    
+    $PAGE->requires->css('/local/epicereports/styles/epice.css');
+}
+
+/**
+ * Incluye DataTables (CSS y JS) para las tablas interactivas.
+ * DEBE llamarse ANTES de $OUTPUT->header()
+ * 
+ * @param string $tableid ID de la tabla a inicializar
+ * @param array $options Opciones adicionales para DataTables
+ */
+function local_epicereports_include_datatables(string $tableid = 'data-table', array $options = []): void {
+    global $PAGE;
+    
+    // CSS de DataTables.
+    $PAGE->requires->css(new moodle_url('https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css'));
+    
+    // Opciones por defecto.
+    $defaults = [
+        'pageLength' => 25,
+        'order' => [[0, 'asc']],
+        'orderableExclude' => -1  // Última columna no ordenable por defecto
+    ];
+    
+    $config = array_merge($defaults, $options);
+    
+    // Construir la configuración de columnas.
+    $columnDefs = '';
+    if (isset($config['orderableExclude'])) {
+        $columnDefs = "columnDefs: [{ orderable: false, targets: {$config['orderableExclude']} }],";
+    }
+    
+    // Construir el orden.
+    $orderConfig = json_encode($config['order']);
+    
+    $PAGE->requires->jquery();
+    $PAGE->requires->js_init_code("
+        require.config({
+            paths: {
+                'datatables.net': 'https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min'
+            },
+            shim: {
+                'datatables.net': {
+                    deps: ['jquery'],
+                    exports: 'jQuery.fn.dataTable'
+                }
+            }
+        });
+
+        require(['jquery', 'datatables.net'], function($) {
+            $('#{$tableid}').DataTable({
+                pageLength: {$config['pageLength']},
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Todos']],
+                order: {$orderConfig},
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
+                },
+                {$columnDefs}
+            });
+        });
+    ");
+}
+
+/**
  * Renderiza el menú lateral del plugin local_epicereports con diseño mejorado.
  *
- * @param string      $active  Uno de: 'dashboard', 'courses', 'course_detail', 'schedules', 'logs', 'test_email', 'test_reports'.
+ * @param string      $active  Uno de: 'dashboard', 'courses', 'course_detail', 'schedules', 'followup', 'test_email', 'test_reports'.
  * @param stdClass|null $course Objeto curso (solo necesario para course_detail).
  */
 function local_epicereports_render_sidebar(string $active = '', ?stdClass $course = null): void {
     global $CFG;
     require_once($CFG->libdir . '/weblib.php');
+    
+    // NOTA: Los estilos CSS deben cargarse ANTES de $OUTPUT->header() 
+    // llamando a local_epicereports_include_styles()
 
     $items = [
         [
@@ -65,12 +137,7 @@ function local_epicereports_render_sidebar(string $active = '', ?stdClass $cours
             'icon'  => 'fa-clock',
         ];
         
-        $items[] = [
-            'id'    => 'logs',
-            'label' => get_string('reportlogs', 'local_epicereports'),
-            'url'   => new moodle_url('/local/epicereports/schedule_logs.php', ['courseid' => $course->id]),
-            'icon'  => 'fa-history',
-        ];
+        // REMOVIDO: Historial de envíos (ahora se accede desde cada programación)
         
         $items[] = [
             'id'    => 'followup',

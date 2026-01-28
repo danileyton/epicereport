@@ -550,19 +550,34 @@ class report_generator {
     private static function build_feedback_excel_content($sheet, $feedback, $items, $completeds): void {
         global $DB;
 
+        // Verificar si la encuesta es anónima.
+        // En Moodle, feedback->anonymous = 1 significa anónimo, 2 significa no anónimo.
+        $is_anonymous = !empty($feedback->anonymous) && $feedback->anonymous == 1;
+
         // Header style.
         $headerStyle = [
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4472C4']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+                'wrapText' => true,
+            ],
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
         ];
 
         // Build headers.
         $col = 0;
-        $sheet->setCellValue(self::excel_col($col++) . '1', 'Usuario');
-        $sheet->setCellValue(self::excel_col($col++) . '1', 'Email');
-        $sheet->setCellValue(self::excel_col($col++) . '1', 'Fecha respuesta');
+        
+        if (!$is_anonymous) {
+            // Si NO es anónima, incluir datos del usuario.
+            $sheet->setCellValue(self::excel_col($col++) . '1', get_string('user', 'local_epicereports'));
+            $sheet->setCellValue(self::excel_col($col++) . '1', get_string('email', 'local_epicereports'));
+            $sheet->setCellValue(self::excel_col($col++) . '1', get_string('responsedate', 'local_epicereports'));
+        } else {
+            // Si es anónima, solo número de respuesta.
+            $sheet->setCellValue(self::excel_col($col++) . '1', get_string('responsesnumber', 'local_epicereports'));
+        }
 
         // Question headers.
         $itemmap = [];
@@ -573,24 +588,31 @@ class report_generator {
             }
 
             $itemmap[$item->id] = $col;
-            $sheet->setCellValue(self::excel_col($col++) . '1', $item->name);
+            $sheet->setCellValue(self::excel_col($col++) . '1', format_string($item->name));
         }
 
         // Apply header style.
         $lastCol = self::excel_col($col - 1);
         $sheet->getStyle('A1:' . $lastCol . '1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(40);
 
         // Data rows.
         $row = 2;
+        $response_number = 1;
 
         foreach ($completeds as $completed) {
-            $col = 0;
+            $datacol = 0;
 
-            // User info.
-            $user = $DB->get_record('user', ['id' => $completed->userid]);
-            $sheet->setCellValue(self::excel_col($col++) . $row, $user ? fullname($user) : 'Anónimo');
-            $sheet->setCellValue(self::excel_col($col++) . $row, $user ? $user->email : '-');
-            $sheet->setCellValue(self::excel_col($col++) . $row, userdate($completed->timemodified, '%d/%m/%Y %H:%M'));
+            if (!$is_anonymous) {
+                // Si NO es anónima, mostrar datos del usuario.
+                $user = $DB->get_record('user', ['id' => $completed->userid]);
+                $sheet->setCellValue(self::excel_col($datacol++) . $row, $user ? fullname($user) : '-');
+                $sheet->setCellValue(self::excel_col($datacol++) . $row, $user ? $user->email : '-');
+                $sheet->setCellValue(self::excel_col($datacol++) . $row, userdate($completed->timemodified, '%d/%m/%Y %H:%M'));
+            } else {
+                // Si es anónima, solo número de respuesta.
+                $sheet->setCellValue(self::excel_col($datacol++) . $row, $response_number);
+            }
 
             // Get values for this completion.
             $values = $DB->get_records('feedback_value', ['completed' => $completed->id]);
@@ -616,11 +638,35 @@ class report_generator {
                 $sheet->setCellValue(self::excel_col($itemcol) . $row, $displayvalue);
             }
 
+            // Row styling.
+            $sheet->getStyle('A' . $row . ':' . $lastCol . $row)->applyFromArray([
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['rgb' => 'CCCCCC'],
+                    ],
+                ],
+                'alignment' => [
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                    'wrapText' => true,
+                ],
+            ]);
+
+            // Alternate row colors.
+            if ($row % 2 === 0) {
+                $sheet->getStyle('A' . $row . ':' . $lastCol . $row)
+                    ->getFill()
+                    ->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()
+                    ->setARGB('FFF5F5F5');
+            }
+
             $row++;
+            $response_number++;
         }
 
         // Summary section.
-        $summaryRow = $row + 2;
+        $summaryRow = $row + 1;
         $sheet->setCellValue('A' . $summaryRow, 'RESUMEN');
         $sheet->getStyle('A' . $summaryRow)->getFont()->setBold(true);
 
@@ -628,10 +674,43 @@ class report_generator {
         $sheet->setCellValue('A' . $summaryRow, 'Total respuestas:');
         $sheet->setCellValue('B' . $summaryRow, count($completeds));
 
-        // Auto-size columns.
-        for ($i = 0; $i < $col; $i++) {
-            $sheet->getColumnDimension(self::excel_col($i))->setAutoSize(true);
+        if ($is_anonymous) {
+            $summaryRow++;
+            $sheet->setCellValue('A' . $summaryRow, 'Tipo de encuesta:');
+            $sheet->setCellValue('B' . $summaryRow, 'Anónima');
         }
+
+        // Column widths.
+        $colIndex = 0;
+        
+        if (!$is_anonymous) {
+            // Usuario, Email, Fecha.
+            $sheet->getColumnDimension(self::excel_col($colIndex++))->setWidth(25);
+            $sheet->getColumnDimension(self::excel_col($colIndex++))->setWidth(30);
+            $sheet->getColumnDimension(self::excel_col($colIndex++))->setWidth(18);
+        } else {
+            // Número de respuesta.
+            $sheet->getColumnDimension(self::excel_col($colIndex++))->setWidth(12);
+        }
+
+        // Question columns.
+        foreach ($items as $item) {
+            if (in_array($item->typ, ['label', 'pagebreak'])) {
+                continue;
+            }
+            if (in_array($item->typ, ['textarea', 'textfield'])) {
+                $sheet->getColumnDimension(self::excel_col($colIndex))->setWidth(50);
+            } else {
+                $sheet->getColumnDimension(self::excel_col($colIndex))->setWidth(15);
+            }
+            $colIndex++;
+        }
+
+        // Freeze panes.
+        $sheet->freezePane('B2');
+
+        // Auto filter.
+        $sheet->setAutoFilter('A1:' . $lastCol . ($row - 1));
     }
 
     /**
@@ -646,16 +725,22 @@ class report_generator {
             return '-';
         }
 
+        // IMPORTANTE: Si el valor contiene <<<<<, extraer solo la primera parte (el valor real).
+        // El formato de multichoicerated es "valor<<<<<indice" (ej: "5<<<<<1")
+        if (strpos($rawvalue, '<<<<<') !== false) {
+            $parts = explode('<<<<<', $rawvalue);
+            return trim($parts[0]);
+        }
+
         switch ($item->typ) {
             case 'multichoice':
+                // For multichoice simple, the value is the option index.
+                // We could return the text, but for consistency we return the number.
+                return $rawvalue;
+
             case 'multichoicerated':
-                // For multichoice, the value is the option index.
-                // We need to parse the presentation to get the actual text.
-                $options = self::parse_multichoice_options($item->presentation);
-                $index = (int)$rawvalue;
-                if ($index > 0 && isset($options[$index - 1])) {
-                    return $options[$index - 1];
-                }
+                // Already handled above with <<<<< check.
+                // If we reach here, it's a simple value.
                 return $rawvalue;
 
             case 'numeric':

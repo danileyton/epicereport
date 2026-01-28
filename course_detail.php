@@ -1,6 +1,6 @@
 <?php
 /**
- * Página de detalle de un curso - Diseño mejorado con CSS embebido
+ * Página de detalle de un curso - Con gráfico de progreso de estudiantes
  *
  * @package    local_epicereports
  * @copyright  2024
@@ -62,6 +62,45 @@ $PAGE->requires->js_init_code("
 
 $course_data = helper::get_course_data_for_excel($courseid);
 
+// Calcular estadísticas de progreso para el gráfico.
+$progress_stats = calculate_course_progress_stats($course_data['users']);
+
+// Chart.js configuration para gráfico de progreso.
+$PAGE->requires->js_amd_inline("
+require(['core/chartjs'], function(Chart) {
+    var ctx = document.getElementById('courseProgressChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['" . get_string('chart_completed', 'local_epicereports') . "', '" . get_string('chart_in_progress', 'local_epicereports') . "', '" . get_string('chart_not_started', 'local_epicereports') . "'],
+                datasets: [{
+                    data: [{$progress_stats['completed']}, {$progress_stats['in_progress']}, {$progress_stats['not_started']}],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+");
+
 echo $OUTPUT->header();
 
 // CSS embebido.
@@ -116,7 +155,9 @@ echo '<style>
 
 .epice-card { background: var(--epice-bg-card); border-radius: var(--epice-radius-md); box-shadow: var(--epice-shadow); border: 1px solid var(--epice-border-light); margin-bottom: 24px; overflow: hidden; }
 .epice-card-header { background: var(--epice-bg-header); padding: 16px 24px; }
+.epice-card-header-light { background: var(--epice-bg-table-header); padding: 16px 24px; border-bottom: 1px solid var(--epice-border); }
 .epice-card-title { color: var(--epice-text-inverse); font-size: 1.1rem; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 8px; }
+.epice-card-title-dark { color: var(--epice-text-primary); }
 .epice-card-body { padding: 24px; }
 
 .epice-course-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
@@ -134,6 +175,8 @@ echo '<style>
 .epice-btn-info:hover { background: var(--epice-info-light); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
 .epice-btn-warning { background: var(--epice-warning); color: var(--epice-text-primary) !important; }
 .epice-btn-warning:hover { background: var(--epice-warning-light); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+.epice-btn-primary { background: var(--epice-primary); color: var(--epice-text-inverse) !important; }
+.epice-btn-primary:hover { background: var(--epice-primary-light); box-shadow: 0 4px 12px rgba(30, 58, 95, 0.3); }
 .epice-btn-outline { background: transparent; color: var(--epice-text-secondary) !important; border: 1px solid var(--epice-border); }
 .epice-btn-outline:hover { background: var(--epice-bg-table-header); color: var(--epice-text-primary) !important; }
 .epice-btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
@@ -141,6 +184,7 @@ echo '<style>
 .epice-badge { display: inline-flex; align-items: center; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; border-radius: 4px; }
 .epice-badge-success { background: var(--epice-success-bg); color: var(--epice-success); }
 .epice-badge-warning { background: var(--epice-warning-bg); color: #b45309; }
+.epice-badge-danger { background: var(--epice-danger-bg); color: var(--epice-danger); }
 .epice-badge-secondary { background: rgba(100, 116, 139, 0.1); color: var(--epice-text-secondary); }
 
 .epice-progress-wrapper { display: flex; align-items: center; gap: 10px; min-width: 150px; }
@@ -151,6 +195,23 @@ echo '<style>
 .epice-progress-danger { background: linear-gradient(90deg, var(--epice-danger) 0%, var(--epice-danger-light) 100%); }
 .epice-progress-info { background: linear-gradient(90deg, var(--epice-info) 0%, var(--epice-info-light) 100%); }
 .epice-progress-label { font-size: 0.75rem; font-weight: 600; color: var(--epice-text-secondary); min-width: 40px; }
+
+/* Chart Container */
+.epice-chart-container { position: relative; height: 250px; max-width: 300px; margin: 0 auto; }
+
+/* Stats Grid */
+.epice-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-top: 20px; }
+.epice-stat-box { background: var(--epice-bg-table-stripe); padding: 16px; border-radius: var(--epice-radius); text-align: center; }
+.epice-stat-box.success { background: var(--epice-success-bg); }
+.epice-stat-box.warning { background: var(--epice-warning-bg); }
+.epice-stat-box.danger { background: var(--epice-danger-bg); }
+.epice-stat-box.info { background: var(--epice-info-bg); }
+.epice-stat-value { font-size: 1.75rem; font-weight: 700; color: var(--epice-text-primary); }
+.epice-stat-box.success .epice-stat-value { color: var(--epice-success); }
+.epice-stat-box.warning .epice-stat-value { color: var(--epice-warning); }
+.epice-stat-box.danger .epice-stat-value { color: var(--epice-danger); }
+.epice-stat-box.info .epice-stat-value { color: var(--epice-info); }
+.epice-stat-label { font-size: 0.75rem; color: var(--epice-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
 
 .epice-table-container { overflow-x: auto; padding: 16px; }
 table.epice-table { width: 100%; border-collapse: separate; border-spacing: 0; }
@@ -164,7 +225,7 @@ table.epice-table tbody tr:nth-child(even) { background: var(--epice-bg-table-st
 .dataTables_wrapper .dataTables_filter input:focus { outline: none; border-color: var(--epice-accent); box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1); }
 .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 6px 12px; margin: 0 2px; border-radius: 4px; border: 1px solid var(--epice-border) !important; background: var(--epice-bg-card) !important; color: var(--epice-text-secondary) !important; }
 .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: var(--epice-bg-table-header) !important; color: var(--epice-text-primary) !important; }
-.dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--epice-primary) !important; color: var(--epice-text-inverse) !important; border-color: var(--epice-primary) !important; }
+.dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--epice-accent) !important; color: var(--epice-text-inverse) !important; border-color: var(--epice-accent) !important; }
 
 @media (max-width: 768px) {
     .epice-sidebar { margin-bottom: 24px; }
@@ -184,7 +245,7 @@ echo html_writer::end_div();
 // Contenido principal.
 echo html_writer::start_div('col-md-9 col-lg-10');
 
-// Tarjeta de información del curso.
+// Card información del curso.
 echo html_writer::start_div('epice-card');
 echo html_writer::start_div('epice-card-header');
 echo html_writer::tag('h5', 
@@ -192,18 +253,18 @@ echo html_writer::tag('h5',
     ['class' => 'epice-card-title']
 );
 echo html_writer::end_div();
-
 echo html_writer::start_div('epice-card-body');
+
 echo html_writer::start_div('epice-course-info');
 
-// Nombre del curso.
+// Nombre.
 echo html_writer::start_div('epice-info-item');
 echo html_writer::start_div('epice-info-icon');
 echo html_writer::tag('i', '', ['class' => 'fa fa-book']);
 echo html_writer::end_div();
 echo html_writer::start_div('epice-info-content');
-echo html_writer::tag('div', get_string('course', 'local_epicereports'), ['class' => 'epice-info-label']);
-echo html_writer::tag('div', format_string($course_data['course']->fullname), ['class' => 'epice-info-value']);
+echo html_writer::tag('div', get_string('coursename', 'local_epicereports'), ['class' => 'epice-info-label']);
+echo html_writer::tag('div', format_string($course->fullname), ['class' => 'epice-info-value', 'title' => format_string($course->fullname)]);
 echo html_writer::end_div();
 echo html_writer::end_div();
 
@@ -214,63 +275,119 @@ echo html_writer::tag('i', '', ['class' => 'fa fa-tag']);
 echo html_writer::end_div();
 echo html_writer::start_div('epice-info-content');
 echo html_writer::tag('div', get_string('shortname', 'local_epicereports'), ['class' => 'epice-info-label']);
-echo html_writer::tag('div', s($course_data['course']->shortname), ['class' => 'epice-info-value']);
+echo html_writer::tag('div', s($course->shortname), ['class' => 'epice-info-value']);
+echo html_writer::end_div();
+echo html_writer::end_div();
+
+// Total matriculados.
+echo html_writer::start_div('epice-info-item');
+echo html_writer::start_div('epice-info-icon');
+echo html_writer::tag('i', '', ['class' => 'fa fa-users']);
+echo html_writer::end_div();
+echo html_writer::start_div('epice-info-content');
+echo html_writer::tag('div', get_string('enrolledusers', 'local_epicereports'), ['class' => 'epice-info-label']);
+echo html_writer::tag('div', count($course_data['users']), ['class' => 'epice-info-value']);
 echo html_writer::end_div();
 echo html_writer::end_div();
 
 // Visibilidad.
 echo html_writer::start_div('epice-info-item');
-$vis_icon_style = $course_data['course']->visible 
-    ? 'background: rgba(16, 185, 129, 0.1); color: #10b981;' 
-    : 'background: rgba(100, 116, 139, 0.1); color: #64748b;';
-echo html_writer::start_div('epice-info-icon', ['style' => $vis_icon_style]);
+echo html_writer::start_div('epice-info-icon');
 echo html_writer::tag('i', '', ['class' => 'fa fa-eye']);
 echo html_writer::end_div();
 echo html_writer::start_div('epice-info-content');
 echo html_writer::tag('div', get_string('visibility', 'local_epicereports'), ['class' => 'epice-info-label']);
-$visibility_text = $course_data['course']->visible 
-    ? get_string('visible', 'local_epicereports') 
-    : get_string('hidden', 'local_epicereports');
-echo html_writer::tag('div', $visibility_text, ['class' => 'epice-info-value']);
+$vis_text = $course->visible ? get_string('visible', 'local_epicereports') : get_string('hidden', 'local_epicereports');
+echo html_writer::tag('div', $vis_text, ['class' => 'epice-info-value']);
 echo html_writer::end_div();
 echo html_writer::end_div();
 
-// Matriculados.
-$enrolled_count = count($course_data['users']);
-echo html_writer::start_div('epice-info-item');
-echo html_writer::start_div('epice-info-icon', ['style' => 'background: rgba(245, 158, 11, 0.1); color: #f59e0b;']);
-echo html_writer::tag('i', '', ['class' => 'fa fa-users']);
 echo html_writer::end_div();
-echo html_writer::start_div('epice-info-content');
-echo html_writer::tag('div', get_string('enrolled', 'local_epicereports'), ['class' => 'epice-info-label']);
-echo html_writer::tag('div', $enrolled_count . ' ' . get_string('students', 'local_epicereports'), ['class' => 'epice-info-value']);
 echo html_writer::end_div();
 echo html_writer::end_div();
 
-echo html_writer::end_div(); // course-info
-echo html_writer::end_div(); // card-body
-echo html_writer::end_div(); // card
+// Card de progreso de estudiantes (NUEVO).
+if (!empty($course_data['users'])) {
+    echo html_writer::start_div('epice-card');
+    echo html_writer::start_div('epice-card-header-light');
+    echo html_writer::tag('h5', 
+        html_writer::tag('i', '', ['class' => 'fa fa-chart-pie']) . ' ' . get_string('chart_student_progress', 'local_epicereports'), 
+        ['class' => 'epice-card-title epice-card-title-dark']
+    );
+    echo html_writer::end_div();
+    echo html_writer::start_div('epice-card-body');
+    
+    echo html_writer::start_div('row');
+    
+    // Chart column.
+    echo html_writer::start_div('col-md-5 mb-4');
+    echo html_writer::start_div('epice-chart-container');
+    echo html_writer::tag('canvas', '', ['id' => 'courseProgressChart']);
+    echo html_writer::end_div();
+    echo html_writer::end_div();
+    
+    // Stats column.
+    echo html_writer::start_div('col-md-7');
+    echo html_writer::start_div('epice-stats-grid');
+    
+    // Total enrolled.
+    echo html_writer::start_div('epice-stat-box info');
+    echo html_writer::tag('div', $progress_stats['total'], ['class' => 'epice-stat-value']);
+    echo html_writer::tag('div', get_string('totalenrolled', 'local_epicereports'), ['class' => 'epice-stat-label']);
+    echo html_writer::end_div();
+    
+    // Completed.
+    echo html_writer::start_div('epice-stat-box success');
+    echo html_writer::tag('div', $progress_stats['completed'], ['class' => 'epice-stat-value']);
+    echo html_writer::tag('div', get_string('chart_completed', 'local_epicereports'), ['class' => 'epice-stat-label']);
+    echo html_writer::end_div();
+    
+    // In progress.
+    echo html_writer::start_div('epice-stat-box warning');
+    echo html_writer::tag('div', $progress_stats['in_progress'], ['class' => 'epice-stat-value']);
+    echo html_writer::tag('div', get_string('chart_in_progress', 'local_epicereports'), ['class' => 'epice-stat-label']);
+    echo html_writer::end_div();
+    
+    // Not started.
+    echo html_writer::start_div('epice-stat-box danger');
+    echo html_writer::tag('div', $progress_stats['not_started'], ['class' => 'epice-stat-value']);
+    echo html_writer::tag('div', get_string('chart_not_started', 'local_epicereports'), ['class' => 'epice-stat-label']);
+    echo html_writer::end_div();
+    
+    // Completion rate.
+    echo html_writer::start_div('epice-stat-box');
+    echo html_writer::tag('div', $progress_stats['completion_rate'] . '%', ['class' => 'epice-stat-value']);
+    echo html_writer::tag('div', get_string('completionrate', 'local_epicereports'), ['class' => 'epice-stat-label']);
+    echo html_writer::end_div();
+    
+    echo html_writer::end_div(); // stats-grid
+    echo html_writer::end_div(); // col
+    
+    echo html_writer::end_div(); // row
+    echo html_writer::end_div(); // card-body
+    echo html_writer::end_div(); // card
+}
 
-// Botones de exportación.
+// Botones de acción.
 echo html_writer::start_div('epice-btn-group');
 
-// Excel.
+// Exportar a Excel.
 $excel_url = new moodle_url('/local/epicereports/export_course_excel.php', ['courseid' => $courseid]);
 echo html_writer::link($excel_url, 
-    html_writer::tag('i', '', ['class' => 'fa fa-file-excel-o']) . ' ' . get_string('exporttoexcel', 'local_epicereports'),
-    ['class' => 'epice-btn epice-btn-success', 'target' => '_blank']
+    html_writer::tag('i', '', ['class' => 'fa fa-file-excel']) . ' ' . get_string('exporttoexcel', 'local_epicereports'),
+    ['class' => 'epice-btn epice-btn-success']
 );
 
-// Vista previa.
-$preview_url = new moodle_url('/local/epicereports/export_course_excel.php', ['courseid' => $courseid, 'preview' => 1]);
-echo html_writer::link($preview_url, 
-    html_writer::tag('i', '', ['class' => 'fa fa-eye']) . ' ' . get_string('preview', 'local_epicereports'),
-    ['class' => 'epice-btn epice-btn-outline', 'target' => '_blank']
+// Reportes programados.
+$schedule_url = new moodle_url('/local/epicereports/schedule_reports.php', ['courseid' => $courseid]);
+echo html_writer::link($schedule_url, 
+    html_writer::tag('i', '', ['class' => 'fa fa-clock']) . ' ' . get_string('scheduledreports', 'local_epicereports'),
+    ['class' => 'epice-btn epice-btn-primary']
 );
 
 // Certificados (si existen).
-$has_certificates = check_course_has_certificates($courseid);
-if ($has_certificates) {
+$has_certs = check_course_has_certificates($courseid);
+if ($has_certs) {
     $cert_url = new moodle_url('/local/epicereports/export_certificates.php', ['courseid' => $courseid]);
     echo html_writer::link($cert_url, 
         html_writer::tag('i', '', ['class' => 'fa fa-certificate']) . ' ' . get_string('downloadcertificates', 'local_epicereports'),
@@ -292,7 +409,7 @@ if ($has_feedback) {
 $followup_url = new moodle_url('/local/epicereports/followup_messages.php', ['courseid' => $courseid]);
 echo html_writer::link($followup_url, 
     html_writer::tag('i', '', ['class' => 'fa fa-paper-plane']) . ' ' . get_string('followupmessages', 'local_epicereports'),
-    ['class' => 'epice-btn epice-btn-primary']
+    ['class' => 'epice-btn epice-btn-outline']
 );
 
 echo html_writer::end_div(); // btn-group
@@ -367,15 +484,20 @@ if (empty($course_data['users'])) {
         $porcentaje_num = (float)str_replace('%', '', $porcentaje);
         echo html_writer::tag('td', local_epicereports_render_progress_bar($porcentaje_num));
 
-        // Estado.
-        $estado = $user->estado_finalizacion ?? '-';
-        $badge_type = 'secondary';
-        if ($estado === 'Completado') {
+        // Estado - calculado según el porcentaje de avance.
+        // Completado: >= 100%, En progreso: > 0% y < 100%, Sin actividad: 0% o sin acceso
+        $badge_type = 'danger';
+        $estado_texto = get_string('chart_not_started', 'local_epicereports'); // Sin actividad
+        
+        if ($porcentaje_num >= 100) {
             $badge_type = 'success';
-        } else if ($estado === 'En progreso') {
+            $estado_texto = get_string('chart_completed', 'local_epicereports'); // Finalizados
+        } else if ($porcentaje_num > 0) {
             $badge_type = 'warning';
+            $estado_texto = get_string('chart_in_progress', 'local_epicereports'); // En progreso
         }
-        echo html_writer::tag('td', html_writer::tag('span', s($estado), ['class' => 'epice-badge epice-badge-' . $badge_type]));
+        
+        echo html_writer::tag('td', html_writer::tag('span', $estado_texto, ['class' => 'epice-badge epice-badge-' . $badge_type]));
 
         // Nota final.
         $nota_final = !empty($user->nota_final) ? $user->nota_final : '-';
@@ -395,6 +517,50 @@ echo html_writer::end_div(); // col-md-9
 echo html_writer::end_div(); // row
 
 echo $OUTPUT->footer();
+
+/**
+ * Calcula las estadísticas de progreso de los estudiantes del curso.
+ * 
+ * Criterios:
+ * - Sin actividad: Sin acceso al curso (primer_acceso vacío) O 0% de avance
+ * - En progreso: Avance > 0% y < 100%
+ * - Completado: Avance >= 100%
+ * 
+ * @param array $users Array de usuarios con sus datos.
+ * @return array Estadísticas de progreso.
+ */
+function calculate_course_progress_stats(array $users): array {
+    $completed = 0;
+    $in_progress = 0;
+    $not_started = 0;
+    $total = count($users);
+    
+    foreach ($users as $user) {
+        $porcentaje = (float)str_replace('%', '', $user->porcentaje_avance ?? '0');
+        $tiene_acceso = !empty($user->primer_acceso);
+        
+        if ($porcentaje >= 100) {
+            // Completado: 100% de avance
+            $completed++;
+        } else if ($porcentaje > 0 && $porcentaje < 100) {
+            // En progreso: avance mayor a 0% pero menor a 100%
+            $in_progress++;
+        } else {
+            // Sin actividad: sin acceso O 0% de avance
+            $not_started++;
+        }
+    }
+    
+    $completion_rate = $total > 0 ? round(($completed / $total) * 100, 1) : 0;
+    
+    return [
+        'completed' => $completed,
+        'in_progress' => $in_progress,
+        'not_started' => $not_started,
+        'total' => $total,
+        'completion_rate' => $completion_rate
+    ];
+}
 
 // Funciones auxiliares.
 function check_course_has_certificates(int $courseid): bool {

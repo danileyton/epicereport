@@ -416,3 +416,119 @@ $string['error:invalidfollowupid'] = 'ID de programación de seguimiento inváli
 $string['error:nostudentsmatching'] = 'No hay alumnos que cumplan los criterios seleccionados.';
 $string['error:userlimitreached'] = 'El alumno ya recibió el máximo de mensajes permitidos.';
 $string['error:invaliddate'] = 'Fecha inválida: {$a}';
+
+// Fase 5 - Strings adicionales para mensajes de seguimiento.
+$string['followupname'] = 'Nombre de la programación';
+$string['editfollowup'] = 'Editar programación de seguimiento';
+$string['newfollowup'] = 'Nueva programación de seguimiento';
+$string['nofollowups'] = 'No hay programaciones de seguimiento';
+$string['targetstatus'] = 'Estado objetivo de alumnos';
+$string['targetstatus_help'] = 'Seleccione qué tipo de alumnos recibirán el mensaje: todos los que no han completado, solo los que no han iniciado, o solo los que están en progreso.';
+$string['target_all_incomplete'] = 'Todos los incompletos';
+$string['target_not_started'] = 'Sin iniciar';
+$string['target_in_progress'] = 'En progreso';
+$string['schedule'] = 'Programación';
+$string['deliverychannels'] = 'Canales de entrega';
+$string['sendemail'] = 'Enviar por email';
+$string['sendmessage'] = 'Enviar por mensajería Moodle';
+$string['messagecontent'] = 'Contenido del mensaje';
+$string['messagesubject'] = 'Asunto del mensaje';
+$string['messagebody'] = 'Cuerpo del mensaje';
+$string['defaultfollowupsubject'] = 'Recordatorio: Completa tu curso';
+$string['availableplaceholders'] = 'Marcadores disponibles:';
+$string['placeholder_fullname'] = 'Nombre completo del alumno';
+$string['placeholder_firstname'] = 'Nombre del alumno';
+$string['placeholder_lastname'] = 'Apellido del alumno';
+$string['placeholder_email'] = 'Email del alumno';
+$string['placeholder_coursename'] = 'Nombre del curso';
+$string['placeholder_progress'] = 'Progreso del alumno (%)';
+$string['placeholder_courseurl'] = 'URL del curso';
+$string['limitdaily'] = 'Máximo 1 por día';
+$string['limitweekly'] = 'Máximo 1 por semana';
+$string['sendchannels'] = 'Canales';
+$string['senddays'] = 'Días de envío';
+$string['targetstudents'] = 'Alumnos objetivo';
+$string['error_nodays'] = 'Debe seleccionar al menos un día de envío';
+$string['error_nochannels'] = 'Debe seleccionar al menos un canal de entrega';
+$string['error_endbeforestart'] = 'La fecha de fin debe ser posterior a la fecha de inicio';
+$string['filteringbyfollowup'] = 'Filtrando por programación';
+$string['clearfilter'] = 'Quitar filtro';
+$string['nologs'] = 'No hay registros de envío';
+$string['nologsdesc'] = 'Los mensajes enviados aparecerán aquí.';
+$string['date'] = 'Fecha';
+$string['followup'] = 'Programación';
+$string['recipient'] = 'Destinatario';
+$string['error'] = 'Error';
+$string['status_sent'] = 'Enviado';
+$string['status_pending'] = 'Pendiente';
+$string['status_failed'] = 'Fallido';
+$string['followupsummary'] = 'Resumen del envío';
+$string['recipientcount'] = 'Cantidad de destinatarios';
+$string['nostudentstarget'] = 'No hay alumnos que cumplan los criterios seleccionados para esta programación.';
+$string['followupsendconfirm'] = 'Se enviará el mensaje a {$a} alumno(s). ¿Desea continuar?';
+$string['recipientpreview'] = 'Vista previa de destinatarios';
+$string['limitstatus'] = 'Estado límite';
+$string['limitreached'] = 'Límite alcanzado';
+$string['willsend'] = 'Se enviará';
+$string['andmore'] = '... y {$a} más';
+$string['sendnow'] = 'Enviar ahora';
+$string['followupsentsummary'] = 'Enviados: {$a->sent}, Omitidos (límite): {$a->skipped}, Fallidos: {$a->failed}';
+$string['invalidfollowup'] = 'Programación de seguimiento no válida';
+$string['general'] = 'General';
+
+// Message providers.
+$string['messageprovider:followup'] = 'Mensajes de seguimiento de EpicE Reports';
+$string['messageprovider:scheduledreport'] = 'Reportes programados de EpicE Reports';
+
+// Fallback para mensaje vacío.
+$string['followupdefaultbody'] = 'Hola {FULLNAME}, te recordamos que aún no has completado el curso {COURSENAME}. Tu progreso actual es {PROGRESS}. Accede aquí: {COURSEURL}';
+
+// Feedback/Encuestas - cabeceras de reporte.
+$string['user'] = 'Usuario';
+$string['email'] = 'Email';
+$string['responsedate'] = 'Fecha respuesta';
+$string['anonymoussurvey'] = 'Encuesta anónima';
+
+// =====================================================================
+// Nuevas cadenas v1.7.9
+// =====================================================================
+
+// Schedule reports page.
+$string['scheduledreportsdesc'] = 'Configure el envío automático de reportes del curso a los destinatarios seleccionados.';
+$string['noschedulesdesc'] = 'Cree su primera programación para enviar reportes automáticamente.';
+$string['reports'] = 'Reportes';
+$string['confirmscheduledelete'] = '¿Está seguro que desea eliminar esta programación?';
+$string['enable'] = 'Habilitar';
+$string['disable'] = 'Deshabilitar';
+
+// Schedule logs filter.
+$string['filteringbyschedule'] = 'Filtrando por programación';
+$string['schedule'] = 'Programación';
+$string['attachments'] = 'Adjuntos';
+
+// Followup messages page.
+$string['nofollowupsdesc'] = 'Cree su primera programación para enviar recordatorios a los alumnos.';
+
+// =====================================================================
+// Gráficos - Dashboard y Course Detail
+// =====================================================================
+
+// Dashboard charts.
+$string['charts_overview'] = 'Resumen gráfico';
+$string['chart_platform_access'] = 'Acceso a la plataforma';
+$string['chart_satisfaction'] = 'Nivel de satisfacción';
+$string['chart_users_accessed'] = 'Han ingresado';
+$string['chart_users_never_accessed'] = 'Sin acceso';
+
+// Satisfaction levels.
+$string['satisfaction_excellent'] = 'Excelente';
+$string['satisfaction_good'] = 'Bueno';
+$string['satisfaction_regular'] = 'Regular';
+$string['satisfaction_low'] = 'Bajo';
+$string['satisfaction_critical'] = 'Crítico';
+
+// Course detail charts.
+$string['chart_student_progress'] = 'Progreso de estudiantes';
+$string['chart_completed'] = 'Finalizados';
+$string['chart_in_progress'] = 'En progreso';
+$string['chart_not_started'] = 'Sin actividad';

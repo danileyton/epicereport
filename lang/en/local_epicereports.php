@@ -416,3 +416,119 @@ $string['error:invalidfollowupid'] = 'Invalid follow-up schedule ID.';
 $string['error:nostudentsmatching'] = 'No students meet the selected criteria.';
 $string['error:userlimitreached'] = 'The student has already received the maximum allowed messages.';
 $string['error:invaliddate'] = 'Invalid date: {$a}';
+
+// Phase 5 - Additional strings for follow-up messages.
+$string['followupname'] = 'Schedule name';
+$string['editfollowup'] = 'Edit follow-up schedule';
+$string['newfollowup'] = 'New follow-up schedule';
+$string['nofollowups'] = 'No follow-up schedules';
+$string['targetstatus'] = 'Target student status';
+$string['targetstatus_help'] = 'Select which students will receive the message: all incomplete, only not started, or only in progress.';
+$string['target_all_incomplete'] = 'All incomplete';
+$string['target_not_started'] = 'Not started';
+$string['target_in_progress'] = 'In progress';
+$string['schedule'] = 'Schedule';
+$string['deliverychannels'] = 'Delivery channels';
+$string['sendemail'] = 'Send by email';
+$string['sendmessage'] = 'Send by Moodle messaging';
+$string['messagecontent'] = 'Message content';
+$string['messagesubject'] = 'Message subject';
+$string['messagebody'] = 'Message body';
+$string['defaultfollowupsubject'] = 'Reminder: Complete your course';
+$string['availableplaceholders'] = 'Available placeholders:';
+$string['placeholder_fullname'] = 'Student full name';
+$string['placeholder_firstname'] = 'Student first name';
+$string['placeholder_lastname'] = 'Student last name';
+$string['placeholder_email'] = 'Student email';
+$string['placeholder_coursename'] = 'Course name';
+$string['placeholder_progress'] = 'Student progress (%)';
+$string['placeholder_courseurl'] = 'Course URL';
+$string['limitdaily'] = 'Maximum 1 per day';
+$string['limitweekly'] = 'Maximum 1 per week';
+$string['sendchannels'] = 'Channels';
+$string['senddays'] = 'Send days';
+$string['targetstudents'] = 'Target students';
+$string['error_nodays'] = 'You must select at least one send day';
+$string['error_nochannels'] = 'You must select at least one delivery channel';
+$string['error_endbeforestart'] = 'End date must be after start date';
+$string['filteringbyfollowup'] = 'Filtering by schedule';
+$string['clearfilter'] = 'Clear filter';
+$string['nologs'] = 'No send records';
+$string['nologsdesc'] = 'Sent messages will appear here.';
+$string['date'] = 'Date';
+$string['followup'] = 'Schedule';
+$string['recipient'] = 'Recipient';
+$string['error'] = 'Error';
+$string['status_sent'] = 'Sent';
+$string['status_pending'] = 'Pending';
+$string['status_failed'] = 'Failed';
+$string['followupsummary'] = 'Send summary';
+$string['recipientcount'] = 'Recipient count';
+$string['nostudentstarget'] = 'No students match the selected criteria for this schedule.';
+$string['followupsendconfirm'] = 'The message will be sent to {$a} student(s). Do you want to continue?';
+$string['recipientpreview'] = 'Recipient preview';
+$string['limitstatus'] = 'Limit status';
+$string['limitreached'] = 'Limit reached';
+$string['willsend'] = 'Will send';
+$string['andmore'] = '... and {$a} more';
+$string['sendnow'] = 'Send now';
+$string['followupsentsummary'] = 'Sent: {$a->sent}, Skipped (limit): {$a->skipped}, Failed: {$a->failed}';
+$string['invalidfollowup'] = 'Invalid follow-up schedule';
+$string['general'] = 'General';
+
+// Message providers.
+$string['messageprovider:followup'] = 'EpicE Reports follow-up messages';
+$string['messageprovider:scheduledreport'] = 'EpicE Reports scheduled reports';
+
+// Fallback for empty message.
+$string['followupdefaultbody'] = 'Hello {FULLNAME}, we remind you that you have not yet completed the course {COURSENAME}. Your current progress is {PROGRESS}. Access here: {COURSEURL}';
+
+// Feedback/Survey - report headers.
+$string['user'] = 'User';
+$string['email'] = 'Email';
+$string['responsedate'] = 'Response date';
+$string['anonymoussurvey'] = 'Anonymous survey';
+
+// =====================================================================
+// New strings v1.7.9
+// =====================================================================
+
+// Schedule reports page.
+$string['scheduledreportsdesc'] = 'Configure automatic report delivery to selected recipients.';
+$string['noschedulesdesc'] = 'Create your first schedule to send reports automatically.';
+$string['reports'] = 'Reports';
+$string['confirmscheduledelete'] = 'Are you sure you want to delete this schedule?';
+$string['enable'] = 'Enable';
+$string['disable'] = 'Disable';
+
+// Schedule logs filter.
+$string['filteringbyschedule'] = 'Filtering by schedule';
+$string['schedule'] = 'Schedule';
+$string['attachments'] = 'Attachments';
+
+// Followup messages page.
+$string['nofollowupsdesc'] = 'Create your first schedule to send reminders to students.';
+
+// =====================================================================
+// Charts - Dashboard and Course Detail
+// =====================================================================
+
+// Dashboard charts.
+$string['charts_overview'] = 'Charts overview';
+$string['chart_platform_access'] = 'Platform access';
+$string['chart_satisfaction'] = 'Satisfaction level';
+$string['chart_users_accessed'] = 'Have accessed';
+$string['chart_users_never_accessed'] = 'Never accessed';
+
+// Satisfaction levels.
+$string['satisfaction_excellent'] = 'Excellent';
+$string['satisfaction_good'] = 'Good';
+$string['satisfaction_regular'] = 'Regular';
+$string['satisfaction_low'] = 'Low';
+$string['satisfaction_critical'] = 'Critical';
+
+// Course detail charts.
+$string['chart_student_progress'] = 'Student progress';
+$string['chart_completed'] = 'Completed';
+$string['chart_in_progress'] = 'In progress';
+$string['chart_not_started'] = 'Not started';

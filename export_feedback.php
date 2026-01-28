@@ -3,7 +3,7 @@
  * Exportar respuestas de feedback a Excel
  *
  * @package    local_epicereports
- * @copyright  2024 Your Name <your@email.com>
+ * @copyright  2024 EpicE
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -137,6 +137,10 @@ foreach ($feedbacks as $feedback) {
         continue;
     }
     
+    // Verificar si la encuesta es anónima.
+    // En Moodle, feedback->anonymous = 1 significa anónimo, 2 significa no anónimo.
+    $is_anonymous = !empty($feedback->anonymous) && $feedback->anonymous == 1;
+    
     // Crear hoja para este feedback.
     $sheet = $spreadsheet->createSheet($sheetIndex);
     $sheetTitle = preg_replace('/[\\\\\\/*?:\\[\\]]/', '', $feedback->name);
@@ -147,19 +151,21 @@ foreach ($feedbacks as $feedback) {
     // CABECERAS
     // =========================================================================
     
-    $headers = [
-        get_string('responsesnumber', 'local_epicereports'),
-    ];
+    $headers = [];
     
-    // Añadir cabeceras de preguntas (formato similar al de Moodle).
+    // Si NO es anónima, incluir datos del usuario.
+    if (!$is_anonymous) {
+        $headers[] = get_string('user', 'local_epicereports');
+        $headers[] = get_string('email', 'local_epicereports');
+        $headers[] = get_string('responsedate', 'local_epicereports');
+    } else {
+        // Si es anónima, solo número de respuesta.
+        $headers[] = get_string('responsesnumber', 'local_epicereports');
+    }
+    
+    // Añadir cabeceras de preguntas.
     foreach ($question_items as $item) {
-        // Formato: "(N. Pregunta) Pregunta"
-        $header_text = '(' . $item->position . '. ' . format_string($item->name) . ')';
-        // Truncar si es muy largo.
-        if (strlen($header_text) > 100) {
-            $header_text = substr($header_text, 0, 97) . '...';
-        }
-        $headers[] = $header_text;
+        $headers[] = format_string($item->name);
     }
     
     // Escribir cabeceras.
@@ -202,8 +208,16 @@ foreach ($feedbacks as $feedback) {
     foreach ($completeds as $completed) {
         $col = 1;
         
-        // Número de respuesta.
-        $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row, $response_number);
+        if (!$is_anonymous) {
+            // Si NO es anónima, mostrar datos del usuario.
+            $user = $DB->get_record('user', ['id' => $completed->userid]);
+            $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row, $user ? fullname($user) : '-');
+            $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row, $user ? $user->email : '-');
+            $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row, userdate($completed->timemodified, '%d/%m/%Y %H:%M'));
+        } else {
+            // Si es anónima, solo número de respuesta.
+            $sheet->setCellValue(Coordinate::stringFromColumnIndex($col++) . $row, $response_number);
+        }
         
         // Respuestas a cada pregunta.
         foreach ($question_items as $item) {
@@ -217,34 +231,13 @@ foreach ($feedbacks as $feedback) {
             if ($value_record && $value_record->value !== null && $value_record->value !== '') {
                 $raw_value = $value_record->value;
                 
-                // Procesar según el tipo de pregunta.
-                switch ($item->typ) {
-                    case 'multichoicerated':
-                        // Formato almacenado: "valor<<<<<indice" (ej: "5<<<<<1")
-                        // Necesitamos extraer solo el valor (la parte antes de <<<<<)
-                        $display_value = extract_rated_value($raw_value);
-                        break;
-                        
-                    case 'multichoice':
-                        // Para multichoice normal, el valor es el índice de la opción.
-                        // Podemos mostrar el índice o el texto de la opción.
-                        $display_value = extract_multichoice_value($item, $raw_value);
-                        break;
-                        
-                    case 'numeric':
-                        // Valor numérico directo.
-                        $display_value = $raw_value;
-                        break;
-                        
-                    case 'textarea':
-                    case 'textfield':
-                        // Texto libre.
-                        $display_value = $raw_value;
-                        break;
-                        
-                    default:
-                        $display_value = $raw_value;
-                        break;
+                // IMPORTANTE: Si el valor contiene <<<<<, SIEMPRE extraer solo la primera parte.
+                // Esto maneja multichoicerated independientemente del tipo reportado.
+                if (strpos($raw_value, '<<<<<') !== false) {
+                    $parts = explode('<<<<<', $raw_value);
+                    $display_value = trim($parts[0]);
+                } else {
+                    $display_value = $raw_value;
                 }
             }
             
@@ -278,25 +271,49 @@ foreach ($feedbacks as $feedback) {
         $response_number++;
     }
     
+    // =========================================================================
+    // RESUMEN
+    // =========================================================================
+    
+    $summaryRow = $row + 1;
+    $sheet->setCellValue('A' . $summaryRow, 'RESUMEN');
+    $sheet->getStyle('A' . $summaryRow)->getFont()->setBold(true);
+    
+    $summaryRow++;
+    $sheet->setCellValue('A' . $summaryRow, 'Total respuestas:');
+    $sheet->setCellValue('B' . $summaryRow, count($completeds));
+    
+    if ($is_anonymous) {
+        $summaryRow++;
+        $sheet->setCellValue('A' . $summaryRow, 'Tipo de encuesta:');
+        $sheet->setCellValue('B' . $summaryRow, 'Anónima');
+    }
+    
+    // =========================================================================
+    // FORMATO DE COLUMNAS
+    // =========================================================================
+    
     // Autoajustar columnas.
-    // Primera columna (número de respuesta) - ancho fijo.
-    $sheet->getColumnDimension('A')->setWidth(15);
+    $colIndex = 1;
+    
+    if (!$is_anonymous) {
+        // Usuario, Email, Fecha.
+        $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($colIndex++))->setWidth(25);
+        $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($colIndex++))->setWidth(30);
+        $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($colIndex++))->setWidth(18);
+    } else {
+        // Número de respuesta.
+        $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($colIndex++))->setWidth(12);
+    }
     
     // Columnas de preguntas.
-    for ($i = 2; $i < $col; $i++) {
-        $colLetter = Coordinate::stringFromColumnIndex($i);
-        // Ancho fijo para preguntas de escala, más ancho para texto.
-        $item_index = $i - 2;
-        if (isset($question_items[$item_index])) {
-            $item_type = array_values($question_items)[$item_index]->typ ?? '';
-            if (in_array($item_type, ['textarea', 'textfield'])) {
-                $sheet->getColumnDimension($colLetter)->setWidth(50);
-            } else {
-                $sheet->getColumnDimension($colLetter)->setWidth(12);
-            }
+    foreach ($question_items as $item) {
+        if (in_array($item->typ, ['textarea', 'textfield'])) {
+            $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($colIndex))->setWidth(50);
         } else {
-            $sheet->getColumnDimension($colLetter)->setWidth(15);
+            $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($colIndex))->setWidth(15);
         }
+        $colIndex++;
     }
     
     // Congelar paneles.
@@ -329,7 +346,7 @@ if ($spreadsheet->getSheetCount() === 0) {
 $spreadsheet->setActiveSheetIndex(0);
 
 // Nombre del archivo.
-$filename = clean_filename('feedback_curso_' . $courseid . '_' . date('Ymd_His') . '.xlsx');
+$filename = clean_filename('encuestas_' . $course->shortname . '_' . date('Ymd_His') . '.xlsx');
 
 // Cabeceras HTTP.
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -351,87 +368,3 @@ $spreadsheet->disconnectWorksheets();
 unset($spreadsheet);
 
 exit;
-
-// =========================================================================
-// FUNCIONES AUXILIARES
-// =========================================================================
-
-/**
- * Extrae el valor numérico de una respuesta multichoicerated.
- * 
- * El formato almacenado es "valor<<<<<indice" (ej: "5<<<<<1")
- * Necesitamos extraer solo el valor (la parte antes de <<<<<).
- *
- * @param string $raw_value El valor raw almacenado.
- * @return string El valor limpio.
- */
-function extract_rated_value(string $raw_value): string {
-    // Si contiene el separador <<<<<, extraer la primera parte.
-    if (strpos($raw_value, '<<<<<') !== false) {
-        $parts = explode('<<<<<', $raw_value);
-        return trim($parts[0]);
-    }
-    
-    // Si no tiene el separador, devolver el valor tal cual.
-    return $raw_value;
-}
-
-/**
- * Extrae el valor de una respuesta multichoice.
- * 
- * Para multichoice, el valor almacenado es el índice de la opción (1-based).
- * Podemos devolver el índice o buscar el texto de la opción.
- *
- * @param object $item El ítem de feedback.
- * @param string $raw_value El valor raw almacenado.
- * @return string El valor procesado.
- */
-function extract_multichoice_value(object $item, string $raw_value): string {
-    // Si está vacío, devolver vacío.
-    if (empty($raw_value)) {
-        return '';
-    }
-    
-    // Si contiene el separador <<<<<, es un multichoicerated mal clasificado.
-    if (strpos($raw_value, '<<<<<') !== false) {
-        return extract_rated_value($raw_value);
-    }
-    
-    // Para multichoice simple, el valor es el índice.
-    // Podríamos devolver el texto de la opción, pero por consistencia
-    // con el reporte de Moodle, devolvemos el valor numérico.
-    return $raw_value;
-}
-
-/**
- * Obtiene el texto de una opción de multichoice en feedback.
- * (Función auxiliar por si se necesita mostrar texto en lugar de número)
- *
- * @param object $item El ítem de feedback.
- * @param string $value El valor almacenado (índice de la opción).
- * @return string El texto de la opción o el valor original.
- */
-function get_feedback_choice_text(object $item, string $value): string {
-    if (empty($value) || !is_numeric($value)) {
-        return $value;
-    }
-    
-    // El campo 'presentation' contiene las opciones.
-    // Formato típico: "r>>>>>opcion1|opcion2|opcion3" o "c>>>>>opcion1|opcion2"
-    $presentation = $item->presentation;
-    
-    // Remover prefijos como "r>>>>>" o "c>>>>>" o "d>>>>>"
-    $presentation = preg_replace('/^[rcd]>{1,}/', '', $presentation);
-    
-    // Separar opciones.
-    $options = explode('|', $presentation);
-    
-    // El valor es el índice (1-based).
-    $index = (int)$value - 1;
-    
-    if (isset($options[$index])) {
-        return trim($options[$index]);
-    }
-    
-    return $value;
-}

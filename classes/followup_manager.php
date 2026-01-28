@@ -185,7 +185,56 @@ class followup_manager {
      * @return int|null The next run timestamp or null if no valid next run.
      */
     public static function calculate_next_run(object $followup): ?int {
-        // TODO: Implementar en Fase 6 - similar a schedule_manager
+        if (empty($followup->enabled)) {
+            return null;
+        }
+
+        // Parse send time.
+        $timeparts = explode(':', $followup->sendtime);
+        $sendhour = (int)($timeparts[0] ?? 9);
+        $sendminute = (int)($timeparts[1] ?? 0);
+
+        // Start from today or tomorrow depending on current time.
+        $now = time();
+        $today = strtotime('today midnight');
+        $todaysendtime = $today + ($sendhour * 3600) + ($sendminute * 60);
+
+        // If today's send time hasn't passed yet and today is a valid day, use today.
+        // Otherwise start checking from tomorrow.
+        if ($now < $todaysendtime) {
+            $checkdate = $today;
+        } else {
+            $checkdate = strtotime('+1 day', $today);
+        }
+
+        // Day mapping.
+        $daymap = [
+            1 => 'monday',
+            2 => 'tuesday',
+            3 => 'wednesday',
+            4 => 'thursday',
+            5 => 'friday',
+            6 => 'saturday',
+            0 => 'sunday',
+        ];
+
+        // Check the next 14 days for a valid send day.
+        for ($i = 0; $i < 14; $i++) {
+            $dayofweek = (int)date('w', $checkdate);
+            $dayfield = $daymap[$dayofweek];
+
+            if (!empty($followup->$dayfield)) {
+                // Check if within date range.
+                if ($checkdate >= $followup->startdate) {
+                    if (empty($followup->enddate) || $checkdate <= $followup->enddate) {
+                        return $checkdate + ($sendhour * 3600) + ($sendminute * 60);
+                    }
+                }
+            }
+
+            $checkdate = strtotime('+1 day', $checkdate);
+        }
+
         return null;
     }
 
@@ -201,8 +250,68 @@ class followup_manager {
      * @return array Array of user objects.
      */
     public static function get_target_students(int $courseid, string $targetStatus = 'all_incomplete'): array {
-        // TODO: Implementar en Fase 7
-        return [];
+        global $DB;
+
+        $context = \context_course::instance($courseid);
+
+        // Get all enrolled students.
+        $enrolledusers = get_enrolled_users($context, '', 0, 'u.*', null, 0, 0, true);
+
+        if (empty($enrolledusers)) {
+            return [];
+        }
+
+        $course = get_course($courseid);
+        $completion = new \completion_info($course);
+
+        if (!$completion->is_enabled()) {
+            // If completion is not enabled, return all enrolled users for 'all_incomplete'.
+            if ($targetStatus === 'all_incomplete') {
+                return $enrolledusers;
+            }
+            return [];
+        }
+
+        $targetstudents = [];
+
+        foreach ($enrolledusers as $user) {
+            // Get progress.
+            $progress = \core_completion\progress::get_course_progress_percentage($course, $user->id);
+            $user->progress = $progress ?? 0;
+
+            // Check if completed.
+            $iscompleted = $completion->is_course_complete($user->id);
+
+            if ($iscompleted) {
+                // Skip completed students.
+                continue;
+            }
+
+            // Filter by target status.
+            switch ($targetStatus) {
+                case 'not_started':
+                    // Progress is 0 or null.
+                    if ($user->progress == 0) {
+                        $targetstudents[] = $user;
+                    }
+                    break;
+
+                case 'in_progress':
+                    // Progress is > 0 but not complete.
+                    if ($user->progress > 0) {
+                        $targetstudents[] = $user;
+                    }
+                    break;
+
+                case 'all_incomplete':
+                default:
+                    // Any non-completed student.
+                    $targetstudents[] = $user;
+                    break;
+            }
+        }
+
+        return $targetstudents;
     }
 
     /**
@@ -408,5 +517,112 @@ class followup_manager {
         $followup->timemodified = $now;
 
         return $DB->update_record(self::TABLE_FOLLOWUP, $followup);
+    }
+
+    // =========================================================================
+    // MESSAGE SENDING UTILITIES
+    // =========================================================================
+
+    /**
+     * Replace placeholders in message content.
+     *
+     * @param string $content The content with placeholders.
+     * @param object $user The user object.
+     * @param object $course The course object.
+     * @return string The content with placeholders replaced.
+     */
+    public static function replace_placeholders(string $content, object $user, object $course): string {
+        global $CFG;
+
+        $courseurl = new \moodle_url('/course/view.php', ['id' => $course->id]);
+
+        // Calculate progress.
+        $progress = 0;
+        try {
+            $completion = new \completion_info($course);
+            if ($completion->is_enabled()) {
+                $progress = \core_completion\progress::get_course_progress_percentage($course, $user->id);
+                $progress = $progress ?? 0;
+            }
+        } catch (\Exception $e) {
+            $progress = 0;
+        }
+
+        $replacements = [
+            '{FULLNAME}' => fullname($user),
+            '{FIRSTNAME}' => $user->firstname ?? '',
+            '{LASTNAME}' => $user->lastname ?? '',
+            '{EMAIL}' => $user->email ?? '',
+            '{COURSENAME}' => format_string($course->fullname),
+            '{COURSESHORTNAME}' => format_string($course->shortname),
+            '{PROGRESS}' => round($progress) . '%',
+            '{COURSEURL}' => $courseurl->out(false),
+            '{SITEURL}' => $CFG->wwwroot,
+            '{SITENAME}' => format_string($CFG->sitename ?? 'Moodle'),
+        ];
+
+        return str_replace(array_keys($replacements), array_values($replacements), $content);
+    }
+
+    /**
+     * Send an email to a user.
+     *
+     * @param object $user The user object.
+     * @param string $subject Email subject.
+     * @param string $body Email body (HTML).
+     * @param object $course The course object.
+     * @return bool True on success.
+     */
+    public static function send_email(object $user, string $subject, string $body, object $course): bool {
+        global $CFG;
+
+        // Get the noreply user.
+        $noreplyuser = \core_user::get_noreply_user();
+
+        // Send the email.
+        $result = email_to_user(
+            $user,
+            $noreplyuser,
+            $subject,
+            html_to_text($body),
+            $body
+        );
+
+        return (bool)$result;
+    }
+
+    /**
+     * Send a Moodle message to a user.
+     *
+     * @param object $user The user object.
+     * @param string $subject Message subject.
+     * @param string $body Message body (HTML).
+     * @param object $course The course object.
+     * @return bool True on success.
+     */
+    public static function send_moodle_message(object $user, string $subject, string $body, object $course): bool {
+        global $USER;
+
+        $message = new \core\message\message();
+        $message->component = 'local_epicereports';
+        $message->name = 'followup';
+        $message->userfrom = \core_user::get_noreply_user();
+        $message->userto = $user;
+        $message->subject = $subject;
+        $message->fullmessage = html_to_text($body);
+        $message->fullmessageformat = FORMAT_PLAIN;
+        $message->fullmessagehtml = $body;
+        $message->smallmessage = $subject;
+        $message->notification = 1;
+        $message->contexturl = new \moodle_url('/course/view.php', ['id' => $course->id]);
+        $message->contexturlname = format_string($course->fullname);
+
+        try {
+            $messageid = message_send($message);
+            return !empty($messageid);
+        } catch (\Exception $e) {
+            debugging('Error sending Moodle message: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            return false;
+        }
     }
 }

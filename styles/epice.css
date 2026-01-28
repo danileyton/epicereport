@@ -1,0 +1,718 @@
+/**
+ * EpicE Reports - Estilos centralizados
+ *
+ * @package    local_epicereports
+ * @copyright  2024 EpicE
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/* ============================================
+   CSS Variables - Design System
+   ============================================ */
+:root {
+    --epice-primary: #1e3a5f;
+    --epice-primary-light: #2d5a8a;
+    --epice-primary-dark: #0f2744;
+    --epice-accent: #0ea5e9;
+    --epice-accent-light: #38bdf8;
+    
+    --epice-success: #10b981;
+    --epice-success-bg: rgba(16, 185, 129, 0.1);
+    --epice-warning: #f59e0b;
+    --epice-warning-bg: rgba(245, 158, 11, 0.1);
+    --epice-danger: #ef4444;
+    --epice-danger-bg: rgba(239, 68, 68, 0.1);
+    --epice-info: #3b82f6;
+    --epice-info-bg: rgba(59, 130, 246, 0.1);
+    
+    --epice-bg-card: #ffffff;
+    --epice-bg-sidebar: linear-gradient(180deg, #1e3a5f 0%, #0f2744 100%);
+    --epice-bg-header: linear-gradient(135deg, #1e3a5f 0%, #2d5a8a 100%);
+    --epice-bg-table-header: #f1f5f9;
+    --epice-bg-table-stripe: #f8fafc;
+    
+    --epice-text-primary: #1e293b;
+    --epice-text-secondary: #64748b;
+    --epice-text-muted: #94a3b8;
+    --epice-text-inverse: #ffffff;
+    
+    --epice-border: #e2e8f0;
+    --epice-border-light: #f1f5f9;
+    
+    --epice-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --epice-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --epice-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    --epice-radius: 8px;
+    --epice-radius-md: 12px;
+    --epice-radius-lg: 16px;
+    
+    --epice-transition: all 0.2s ease-in-out;
+}
+
+/* ============================================
+   Sidebar Styles
+   ============================================ */
+.epice-sidebar {
+    background: var(--epice-bg-sidebar);
+    border-radius: var(--epice-radius-md);
+    padding: 0;
+    box-shadow: var(--epice-shadow-md);
+    overflow: hidden;
+    min-height: 400px;
+}
+
+.epice-sidebar-header {
+    padding: 24px 20px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.epice-sidebar-logo {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.epice-sidebar-title {
+    color: var(--epice-text-inverse);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.epice-sidebar-subtitle {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.7rem;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.epice-nav {
+    list-style: none;
+    padding: 12px 0;
+    margin: 0;
+}
+
+.epice-nav-item {
+    margin: 2px 8px;
+}
+
+.epice-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    color: rgba(255, 255, 255, 0.75) !important;
+    text-decoration: none !important;
+    border-radius: var(--epice-radius);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: var(--epice-transition);
+}
+
+.epice-nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--epice-text-inverse) !important;
+    text-decoration: none !important;
+}
+
+.epice-nav-link.active {
+    background: var(--epice-accent);
+    color: var(--epice-text-inverse) !important;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+}
+
+.epice-nav-icon {
+    margin-right: 12px;
+    width: 20px;
+    text-align: center;
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.epice-nav-separator {
+    padding: 20px 16px 8px 16px;
+    margin: 0 8px;
+}
+
+.epice-nav-separator-text {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+}
+
+/* ============================================
+   Card Styles
+   ============================================ */
+.epice-card {
+    background: var(--epice-bg-card);
+    border-radius: var(--epice-radius-md);
+    box-shadow: var(--epice-shadow);
+    border: 1px solid var(--epice-border-light);
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+
+.epice-card-header {
+    background: var(--epice-bg-header);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.epice-card-title {
+    color: var(--epice-text-inverse);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.epice-card-body {
+    padding: 24px;
+}
+
+/* ============================================
+   Button Styles
+   ============================================ */
+.epice-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: var(--epice-radius);
+    border: none;
+    cursor: pointer;
+    transition: var(--epice-transition);
+    text-decoration: none !important;
+    line-height: 1.4;
+}
+
+.epice-btn:hover {
+    transform: translateY(-1px);
+    text-decoration: none !important;
+}
+
+.epice-btn-primary {
+    background: var(--epice-primary);
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-primary:hover {
+    background: var(--epice-primary-light);
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-success {
+    background: var(--epice-success);
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-success:hover {
+    background: #0d9668;
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-warning {
+    background: var(--epice-warning);
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-warning:hover {
+    background: #d97706;
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-danger {
+    background: var(--epice-danger);
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-danger:hover {
+    background: #dc2626;
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-outline {
+    background: transparent;
+    color: var(--epice-text-secondary) !important;
+    border: 1px solid var(--epice-border);
+}
+
+.epice-btn-outline:hover {
+    background: var(--epice-bg-table-header);
+    color: var(--epice-text-primary) !important;
+}
+
+.epice-btn-outline-light {
+    background: transparent;
+    color: var(--epice-text-inverse) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.epice-btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--epice-text-inverse) !important;
+}
+
+.epice-btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.epice-btn-xs {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+}
+
+.epice-btn-lg {
+    padding: 14px 28px;
+    font-size: 1rem;
+}
+
+/* ============================================
+   Table Styles
+   ============================================ */
+.epice-table-container {
+    overflow-x: auto;
+}
+
+table.epice-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+table.epice-table thead th {
+    background: var(--epice-bg-table-header);
+    color: var(--epice-text-primary);
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 2px solid var(--epice-border);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+table.epice-table tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--epice-border-light);
+    color: var(--epice-text-primary);
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+
+table.epice-table tbody tr:hover {
+    background: rgba(14, 165, 233, 0.04);
+}
+
+table.epice-table tbody tr:nth-child(even) {
+    background: var(--epice-bg-table-stripe);
+}
+
+table.epice-table tbody tr:nth-child(even):hover {
+    background: rgba(14, 165, 233, 0.06);
+}
+
+/* ============================================
+   Badge Styles
+   ============================================ */
+.epice-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.epice-badge-success {
+    background: var(--epice-success-bg);
+    color: var(--epice-success);
+}
+
+.epice-badge-warning {
+    background: var(--epice-warning-bg);
+    color: var(--epice-warning);
+}
+
+.epice-badge-danger {
+    background: var(--epice-danger-bg);
+    color: var(--epice-danger);
+}
+
+.epice-badge-info {
+    background: var(--epice-info-bg);
+    color: var(--epice-info);
+}
+
+.epice-badge-primary {
+    background: rgba(30, 58, 95, 0.1);
+    color: var(--epice-primary);
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+.epice-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--epice-text-secondary);
+}
+
+.epice-empty-state i {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.3;
+    display: block;
+}
+
+.epice-empty-state h4 {
+    color: var(--epice-text-primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.epice-empty-state p {
+    margin-bottom: 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ============================================
+   Actions Group
+   ============================================ */
+.epice-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* ============================================
+   Channel Icons
+   ============================================ */
+.epice-channel-icons {
+    display: flex;
+    gap: 6px;
+}
+
+.epice-channel-icons i {
+    font-size: 1rem;
+}
+
+.epice-channel-icons .active {
+    color: var(--epice-success);
+}
+
+.epice-channel-icons .inactive {
+    color: var(--epice-text-muted);
+}
+
+/* ============================================
+   Days Indicator
+   ============================================ */
+.epice-days {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.epice-day {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.epice-day.active {
+    background: var(--epice-accent);
+    color: white;
+}
+
+.epice-day.inactive {
+    background: var(--epice-border-light);
+    color: var(--epice-text-muted);
+}
+
+/* ============================================
+   Description Text
+   ============================================ */
+.epice-description {
+    color: var(--epice-text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+/* ============================================
+   Filter Info Bar
+   ============================================ */
+.epice-filter-info {
+    background: var(--epice-info-bg);
+    color: var(--epice-info);
+    padding: 12px 16px;
+    border-radius: var(--epice-radius);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+/* ============================================
+   Alert Styles
+   ============================================ */
+.epice-alert {
+    padding: 16px 20px;
+    border-radius: var(--epice-radius);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.epice-alert i {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.epice-alert-warning {
+    background: var(--epice-warning-bg);
+    color: #92400e;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.epice-alert-info {
+    background: var(--epice-info-bg);
+    color: #1e40af;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.epice-alert-success {
+    background: var(--epice-success-bg);
+    color: #065f46;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.epice-alert-danger {
+    background: var(--epice-danger-bg);
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ============================================
+   Summary Box
+   ============================================ */
+.epice-summary-box {
+    background: var(--epice-bg-table-header);
+    border-radius: var(--epice-radius);
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.epice-summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--epice-border-light);
+}
+
+.epice-summary-item:last-child {
+    border-bottom: none;
+}
+
+.epice-summary-label {
+    color: var(--epice-text-secondary);
+}
+
+.epice-summary-value {
+    font-weight: 600;
+    color: var(--epice-text-primary);
+}
+
+/* ============================================
+   Progress Bar
+   ============================================ */
+.epice-progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.epice-progress {
+    flex: 1;
+    height: 8px;
+    background: var(--epice-border-light);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.epice-progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.epice-progress-success {
+    background: var(--epice-success);
+}
+
+.epice-progress-warning {
+    background: var(--epice-warning);
+}
+
+.epice-progress-danger {
+    background: var(--epice-danger);
+}
+
+.epice-progress-info {
+    background: var(--epice-info);
+}
+
+.epice-progress-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--epice-text-secondary);
+    min-width: 45px;
+    text-align: right;
+}
+
+/* ============================================
+   Stat Cards
+   ============================================ */
+.epice-stat-card {
+    background: var(--epice-bg-card);
+    border-radius: var(--epice-radius-md);
+    padding: 20px;
+    box-shadow: var(--epice-shadow);
+    border: 1px solid var(--epice-border-light);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.epice-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--epice-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.epice-stat-icon.icon-primary {
+    background: rgba(30, 58, 95, 0.1);
+    color: var(--epice-primary);
+}
+
+.epice-stat-icon.icon-success {
+    background: var(--epice-success-bg);
+    color: var(--epice-success);
+}
+
+.epice-stat-icon.icon-warning {
+    background: var(--epice-warning-bg);
+    color: var(--epice-warning);
+}
+
+.epice-stat-icon.icon-info {
+    background: var(--epice-info-bg);
+    color: var(--epice-info);
+}
+
+.epice-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--epice-text-primary);
+    line-height: 1.2;
+}
+
+.epice-stat-label {
+    font-size: 0.8rem;
+    color: var(--epice-text-secondary);
+    margin-top: 2px;
+}
+
+/* ============================================
+   Channel Badge
+   ============================================ */
+.epice-channel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    background: var(--epice-bg-table-header);
+    border-radius: 4px;
+}
+
+.epice-channel-badge i {
+    font-size: 0.8rem;
+}
+
+/* ============================================
+   Form Styles Override
+   ============================================ */
+.epice-card-body .form-group {
+    margin-bottom: 16px;
+}
+
+.epice-card-body #id_generalhdr,
+.epice-card-body #id_schedulehdr,
+.epice-card-body #id_channelshdr,
+.epice-card-body #id_messagehdr {
+    background: var(--epice-bg-table-header);
+    border: none;
+    border-radius: var(--epice-radius);
+    margin-top: 16px;
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+@media (max-width: 768px) {
+    .epice-sidebar {
+        min-height: auto;
+        margin-bottom: 20px;
+    }
+    
+    .epice-card-header {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+    
+    .epice-actions {
+        justify-content: center;
+    }
+    
+    table.epice-table thead th,
+    table.epice-table tbody td {
+        padding: 10px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .epice-stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
